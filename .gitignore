@@ -4,6 +4,7 @@
 # Temporal adjustment
 .idea/*
 .idea/vcs.xml
+Notes.txt
 
 # User-specific stuff
 .idea/**/workspace.xml
