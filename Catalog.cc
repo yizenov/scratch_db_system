@@ -1,5 +1,6 @@
 #include <iostream>
 #include "sqlite3.h"
+#include <fstream>
 
 #include "Schema.h"
 #include "Catalog.h"
@@ -8,6 +9,15 @@ using namespace std;
 
 
 Catalog::Catalog(string& _fileName) {
+
+	ifstream input_file(_fileName);
+	if (input_file.fail()) {
+		connection_status = false;
+	} else {
+		sqlite3 *catalog_db;
+        connection_status = sqlite3_open(_fileName.c_str(), &catalog_db) == SQLITE_OK;
+		sqlite3_close(catalog_db);
+	}
 }
 
 Catalog::~Catalog() {
@@ -60,4 +70,13 @@ bool Catalog::DropTable(string& _table) {
 
 ostream& operator<<(ostream& _os, Catalog& _c) {
 	return _os;
+}
+
+void Catalog::UploadSchemas() {
+    //  vector<unsigned int> distincts;
+    //	Schema s(attributes, types, distincts);
+    //	Schema s1(s), s2; s2 = s1;
+    //	cout << s << endl;
+    //	cout << s1 << endl;
+    //	cout << s2 << endl;
 }

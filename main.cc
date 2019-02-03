@@ -1,57 +1,70 @@
-#include <vector>
-#include <string>
 #include <iostream>
+#include <string>
+#include <vector>
 
-#include "Schema.h"
 #include "Catalog.h"
+#include "Schema.h"
 
 using namespace std;
 
+Catalog connect_db() {
+  string dbFile = "catalog.sqlite";
+  Catalog cat_(dbFile);
+  return cat_;
+}
 
-int main () {
-	string table = "region", attribute, type;
-	vector<string> attributes, types;
-	vector<unsigned int> distincts;
+bool update_catalog() { return true; }
 
-	attribute = "r_regionkey"; attributes.push_back(attribute);
-	type = "INTEGER"; types.push_back(type);
-	distincts.push_back(5);
-	attribute = "r_name"; attributes.push_back(attribute);
-	type = "STRING"; types.push_back(type);
-	distincts.push_back(5);
-	attribute = "r_comment"; attributes.push_back(attribute);
-	type = "STRING"; types.push_back(type);
-	distincts.push_back(5);
+int main() {
 
-	Schema s(attributes, types, distincts);
-	Schema s1(s), s2; s2 = s1;
+  auto cat = connect_db();
+  if (!cat.GetConnectionStatus()) {
+  	cout << "NO CONNECTION WITH DB" << endl;
+  	return 0;
+  }
+  cat.UploadSchemas();
 
-	string a1 = "r_regionkey", b1 = "regionkey";
-	string a2 = "r_name", b2 = "name";
-	string a3 = "r_commen", b3 = "comment";
+  unsigned user_choice;
+  while (true) {
 
-	s1.RenameAtt(a1, b1);
-	s1.RenameAtt(a2, b2);
-	s1.RenameAtt(a3, b3);
+    cout << "********** Main Menu **********" << endl;
+    cout << "(1): Create a table" << endl;
+    cout << "(2): Drop a table" << endl;
+    cout << "(3): Display the catalog content" << endl;
+    cout << "(4): Save the catalog content" << endl;
+    cout << "(5): Exit" << endl;
+    cout << "Your choice: ";
+    cin >> user_choice;
 
-	s2.Append(s1);
+    if (user_choice == 1) {
 
-	vector<int> keep;
-	keep.push_back(5);
-	keep.push_back(0);
-	s2.Project(keep);
+		string table_name;
+		cin >> table_name;
 
-	cout << s << endl;
-	cout << s1 << endl;
-	cout << s2 << endl;
+		vector<string> attributes, types;
+		string attribute, type;
+		cin >> attribute >> type;
+		attributes.push_back(attribute); types.push_back(type);
 
+		cat.CreateTable(table_name, attributes, types);
 
-	string dbFile = "catalog.sqlite";
-	Catalog c(dbFile);
+	} else if (user_choice == 2) {
+      break;
+    } else if (user_choice == 3) {
+      break;
+    } else if (user_choice == 4) {
+      if (update_catalog())
+        cout << "CATALOG IS UP TO DATE" << endl;
+      else
+        cout << "ERRORS WHILE UPDATING CATALOG" << endl;
+    } else if (user_choice == 5) {
+      if (!update_catalog())
+        cout << "ERRORS WHILE UPDATING CATALOG" << endl;
+      break;
+    } else {
+      cout << "INVALID CHOICE" << endl;
+    }
+  }
 
-	c.CreateTable(table, attributes, types);
-
-	cout << c << endl;
-
-	return 0;
+  return 0;
 }

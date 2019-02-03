@@ -4,3 +4,4 @@ project(db_systems)
 set(CMAKE_CXX_STANDARD 14)
 
 add_executable(db_systems Config.h Schema.h Schema.cc Catalog.h Catalog.cc main.cc)
+target_link_libraries(db_systems LINK_PUBLIC sqlite3)

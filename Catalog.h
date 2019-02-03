@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <unordered_map>
 
 #include "Schema.h"
 
@@ -17,6 +18,8 @@ private:
 	 * Efficient data structures are recommended.
 	 * Avoid linear traversals when possible.
 	 */
+	unordered_map<string, Schema> schema_data_;
+	bool connection_status;
 
 public:
 	/* Catalog constructor.
@@ -97,6 +100,9 @@ public:
 	 * Tables/attributes are sorted in ascending alphabetical order.
 	 */
 	friend ostream& operator<<(ostream& _os, Catalog& _c);
+
+	bool GetConnectionStatus() { return connection_status; }
+	void UploadSchemas();
 };
 
 #endif //_CATALOG_H

@@ -5,6 +5,7 @@
 .idea/*
 .idea/vcs.xml
 Notes.txt
+catalog.sqlite
 
 # User-specific stuff
 .idea/**/workspace.xml
