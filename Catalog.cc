@@ -24,6 +24,8 @@ Catalog::~Catalog() {
 }
 
 bool Catalog::Save() {
+
+	return true;
 }
 
 bool Catalog::GetNoTuples(string& _table, unsigned int& _noTuples) {
@@ -73,6 +75,8 @@ ostream& operator<<(ostream& _os, Catalog& _c) {
 }
 
 void Catalog::UploadSchemas() {
+	schema_data_ = new SchemaMap();
+
     //  vector<unsigned int> distincts;
     //	Schema s(attributes, types, distincts);
     //	Schema s1(s), s2; s2 = s1;

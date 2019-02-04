@@ -1,6 +1,7 @@
 #ifndef _INEFFICIENT_MAP_H
 #define _INEFFICIENT_MAP_H
 
+#include "Keyify.h"
 #include "Swap.h"
 #include "TwoWayList.h"
 
@@ -84,5 +85,7 @@ private:
 
 	TwoWayList <Node> container;
 };
+
+typedef InefficientMap<KeyString, KeySchema> SchemaMap;
 
 #endif

@@ -13,6 +13,8 @@
 
 #include <string>
 
+#include "Schema.h"
+
 using namespace std;
 
 
@@ -34,5 +36,6 @@ public:
 typedef Swapify<double> SwapDouble;
 typedef Swapify<int> SwapInt;
 typedef Swapify<string> SwapString;
+typedef Swapify<Schema> SwapSchema;
 
 #endif //_SWAPIFY_H_

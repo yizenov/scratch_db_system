@@ -37,6 +37,8 @@
 
 #include <string>
 
+#include "Schema.h"
+
 using namespace std;
 
 
@@ -61,5 +63,6 @@ public:
 typedef Keyify<double> KeyDouble;
 typedef Keyify<int> KeyInt;
 typedef Keyify<string> KeyString;
+typedef Keyify<Schema> KeySchema;
 
 #endif //_KEYIFY_H_

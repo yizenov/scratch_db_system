@@ -4,9 +4,10 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <unordered_map>
 
 #include "Schema.h"
+#include "InefficientMap.cc"
+#include "TwoWayList.cc"
 
 using namespace std;
 
@@ -18,7 +19,8 @@ private:
 	 * Efficient data structures are recommended.
 	 * Avoid linear traversals when possible.
 	 */
-	unordered_map<string, Schema> schema_data_;
+
+    SchemaMap *schema_data_;
 	bool connection_status;
 
 public:

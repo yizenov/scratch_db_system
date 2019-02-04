@@ -2,18 +2,17 @@
 #include <string>
 #include <vector>
 
+#include "Config.h"
 #include "Catalog.h"
 #include "Schema.h"
 
 using namespace std;
 
 Catalog connect_db() {
-  string dbFile = "catalog.sqlite";
+  string dbFile = DB_FILE;
   Catalog cat_(dbFile);
   return cat_;
 }
-
-bool update_catalog() { return true; }
 
 int main() {
 
@@ -53,12 +52,12 @@ int main() {
     } else if (user_choice == 3) {
       break;
     } else if (user_choice == 4) {
-      if (update_catalog())
+      if (cat.Save())
         cout << "CATALOG IS UP TO DATE" << endl;
       else
         cout << "ERRORS WHILE UPDATING CATALOG" << endl;
     } else if (user_choice == 5) {
-      if (!update_catalog())
+      if (!cat.Save())
         cout << "ERRORS WHILE UPDATING CATALOG" << endl;
       break;
     } else {

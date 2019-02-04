@@ -19,6 +19,8 @@ using namespace std;
 // maximum number of operators in a function
 #define MAX_FUNCTION_DEPTH 100
 
+// path to database
+#define DB_FILE "catalog.sqlite"
 
 /* source of comparison operand:
  * left relation in join

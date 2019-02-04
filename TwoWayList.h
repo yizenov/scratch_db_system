@@ -99,5 +99,6 @@ private:
 typedef TwoWayList<SwapDouble> DoubleContainer;
 typedef TwoWayList<SwapInt> IntContainer;
 typedef TwoWayList<SwapString> StringContainer;
+typedef TwoWayList<SwapSchema> SchemaContainer;
 
 #endif

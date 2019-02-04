@@ -1,0 +1,3 @@
+
+create table db_tables(name Varchar, tuple_number Int, location Varchar);
+create table db_attributes(name Varchar, type Varchar, dist_values Int);

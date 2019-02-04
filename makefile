@@ -1,4 +1,5 @@
-CC = g++ -g -O0 -Wno-deprecated
+CC = g++ -g -O0 -Wno-deprecated -std=gnu++11
+LIBS = -lsqlite3
 
 tag = -i
 
@@ -7,7 +8,7 @@ ifdef linux
 endif
 
 main.out:	Schema.o Catalog.o main.o
-	$(CC) -o main.out main.o Catalog.o Schema.o -lsqlite3
+	$(CC) -o main.out main.o Catalog.o Schema.o $(LIBS)
 	
 main.o:	main.cc
 	$(CC) -c main.cc
