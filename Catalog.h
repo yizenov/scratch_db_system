@@ -8,6 +8,7 @@
 #include "Schema.h"
 #include "InefficientMap.cc"
 #include "TwoWayList.cc"
+#include "sqlite3.h"
 
 using namespace std;
 
@@ -22,6 +23,11 @@ private:
 
     SchemaMap *schema_data_;
 	bool connection_status;
+    char *error_msg;
+    sqlite3 *catalog_db;
+    sqlite3_stmt *stmt;
+    string query;
+    int rc;
 
 public:
 	/* Catalog constructor.

@@ -50,7 +50,10 @@ int main() {
 	} else if (user_choice == 2) {
       break;
     } else if (user_choice == 3) {
-      break;
+        vector<string> tables;
+        cat.GetTables(tables);
+        for (auto &table : tables)
+            cout << table << endl;
     } else if (user_choice == 4) {
       if (cat.Save())
         cout << "CATALOG IS UP TO DATE" << endl;

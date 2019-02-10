@@ -20,7 +20,9 @@ using namespace std;
 #define MAX_FUNCTION_DEPTH 100
 
 // path to database
-#define DB_FILE "catalog.sqlite"
+#define DB_FILE "/home/yizenov/CLionProjects/db_systems/catalog.sqlite" //TODO: need global path
+#define DB_TABLE_LIST "db_tables"
+#define DB_ATTRIBUTE_LIST "db_attributes"
 
 /* source of comparison operand:
  * left relation in join
