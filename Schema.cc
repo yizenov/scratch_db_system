@@ -1,3 +1,5 @@
+#include <utility>
+
 #include <iostream>
 #include "Config.h"
 #include "Swap.h"
@@ -48,6 +50,8 @@ Schema::Schema(const Schema& _other) {
 		Attribute a; a = _other.atts[i];
 		atts.push_back(a);
 	}
+	tuple_no = _other.tuple_no;
+	table_path = _other.table_path;
 }
 
 Schema& Schema::operator=(const Schema& _other) {
@@ -58,12 +62,16 @@ Schema& Schema::operator=(const Schema& _other) {
 		Attribute a; a = _other.atts[i];
 		atts.push_back(a);
 	}
+	tuple_no = _other.tuple_no;
+	table_path = _other.table_path;
 
 	return *this;
 }
 
 void Schema::Swap(Schema& _other) {
 	atts.swap(_other.atts);
+	tuple_no = _other.tuple_no;
+	table_path = _other.table_path;
 }
 
 int Schema::Append(Schema& _other) {
@@ -76,6 +84,8 @@ int Schema::Append(Schema& _other) {
 		Attribute a; a = _other.atts[i];
 		atts.push_back(a);
 	}
+	tuple_no = _other.tuple_no;
+	table_path = _other.table_path;
 
 	return 0;
 }
@@ -143,6 +153,12 @@ int Schema::Project(vector<int>& _attsToKeep) {
 
 	return 0;
 }
+
+void Schema::SetTuplesNumber(unsigned int _tupleNumber) { tuple_no = _tupleNumber; }
+unsigned int Schema::GetTuplesNumber() { return tuple_no; }
+
+void Schema::SetTablePath(string& _tablePath) { table_path = _tablePath; }
+string Schema::GetTablePath() { return table_path; }
 
 ostream& operator<<(ostream& _os, Schema& _c) {
 	_os << "(";

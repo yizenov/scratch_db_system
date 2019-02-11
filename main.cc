@@ -42,18 +42,26 @@ int main() {
 
 		vector<string> attributes, types;
 		string attribute, type;
-		cin >> attribute >> type;
+		cin >> attribute >> type; // TODO: single attribute so far
 		attributes.push_back(attribute); types.push_back(type);
 
 		cat.CreateTable(table_name, attributes, types);
 
 	} else if (user_choice == 2) {
-      break;
+
+        string table_name;
+        cin >> table_name;
+
+        cat.DropTable(table_name);
+
     } else if (user_choice == 3) {
         vector<string> tables;
         cat.GetTables(tables);
-        for (auto &table : tables)
+        for (auto &table : tables) {
+            Schema table_schema; //TODO: pointer or copy?
+            cat.GetSchema(table, table_schema);
             cout << table << endl;
+        }
     } else if (user_choice == 4) {
       if (cat.Save())
         cout << "CATALOG IS UP TO DATE" << endl;

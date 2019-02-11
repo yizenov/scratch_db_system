@@ -14,5 +14,6 @@
 
 /* macro to swap content of STL-like containers/maps */
 #define STL_SWAP(a,b) a.swap(b);
+#define OBJ_SWAP(a,b) a.Swap(b);
 
 #endif //_SWAP_H_

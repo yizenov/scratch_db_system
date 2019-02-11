@@ -38,6 +38,8 @@ class Schema {
 private:
 	// attributes in schema
 	vector<Attribute> atts;
+	unsigned int tuple_no;
+	string table_path;
 
 public:
 	// default constructor
@@ -86,6 +88,12 @@ public:
 
 	// operator for printing
 	friend ostream& operator<<(ostream& _os, Schema& _c);
+
+	void SetTuplesNumber(unsigned int _tupleNumber);
+	unsigned int GetTuplesNumber();
+
+	void SetTablePath(string& _tablePath);
+	string GetTablePath();
 };
 
 #endif //_SCHEMA

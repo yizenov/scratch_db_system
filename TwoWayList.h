@@ -6,6 +6,7 @@
 
 #include "Swap.h"
 #include "Swapify.h"
+#include "ComplexSwapify.h"
 #include "Keyify.h"
 
 using namespace std;

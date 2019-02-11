@@ -86,6 +86,6 @@ private:
 	TwoWayList <Node> container;
 };
 
-typedef InefficientMap<KeyString, KeySchema> SchemaMap;
+typedef InefficientMap<KeyString, SwapSchema> SchemaMap;
 
 #endif

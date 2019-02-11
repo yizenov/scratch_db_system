@@ -13,5 +13,5 @@ add_executable(db_systems
         Config.h
         Schema.h Schema.cc
         Catalog.h Catalog.cc
-        main.cc)
+        main.cc ComplexSwapify.cc ComplexSwapify.h)
 target_link_libraries(db_systems LINK_PUBLIC sqlite3)

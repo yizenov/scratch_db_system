@@ -3,6 +3,7 @@
 
 #include "TwoWayList.h"
 #include "Swapify.cc"
+#include "ComplexSwapify.cc"
 
 #include <cstdlib>
 #include <iostream>
