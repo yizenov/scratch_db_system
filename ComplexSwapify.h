@@ -5,7 +5,10 @@
 // Created by yizenov on 2/10/19.
 //
 
+#include <iostream>
+
 #include "Schema.h"
+#include "Swap.h"
 
 using namespace std;
 

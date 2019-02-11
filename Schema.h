@@ -4,6 +4,9 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <utility>
+
+#include "Swap.h"
 #include "Config.h"
 
 using namespace std;
@@ -89,9 +92,11 @@ public:
 	// operator for printing
 	friend ostream& operator<<(ostream& _os, Schema& _c);
 
+	// getter/setter for number of tuples in the table
 	void SetTuplesNumber(unsigned int _tupleNumber);
 	unsigned int GetTuplesNumber();
 
+	// getter/setter for the path of the table
 	void SetTablePath(string& _tablePath);
 	string GetTablePath();
 };

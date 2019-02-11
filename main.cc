@@ -2,9 +2,8 @@
 #include <string>
 #include <vector>
 
-#include "Config.h"
 #include "Catalog.h"
-#include "Schema.h"
+#include "Config.h"
 
 using namespace std;
 
@@ -18,8 +17,8 @@ int main() {
 
   auto cat = connect_db();
   if (!cat.GetConnectionStatus()) {
-  	cout << "NO CONNECTION WITH DB" << endl;
-  	return 0;
+    cout << "NO CONNECTION WITH DB" << endl;
+    return 0;
   }
   cat.UploadSchemas();
 
@@ -37,31 +36,30 @@ int main() {
 
     if (user_choice == 1) {
 
-		string table_name;
-		cin >> table_name;
+      string table_name;
+      cin >> table_name;
 
-		vector<string> attributes, types;
-		string attribute, type;
-		cin >> attribute >> type; // TODO: single attribute so far
-		attributes.push_back(attribute); types.push_back(type);
+      vector<string> attributes, types;
+      string attribute, type;
+      int attr_nbr;
 
-		cat.CreateTable(table_name, attributes, types);
+      cout << "Enter number of attributes: ";
+      cin >> attr_nbr;
 
-	} else if (user_choice == 2) {
+      for (int i = 0; i < attr_nbr; i++) {
+          cin >> attribute >> type;
+          attributes.push_back(attribute);
+          types.push_back(type);
+      }
 
-        string table_name;
-        cin >> table_name;
+      cat.CreateTable(table_name, attributes, types);
 
-        cat.DropTable(table_name);
-
+    } else if (user_choice == 2) {
+      string table_name;
+      cin >> table_name;
+      cat.DropTable(table_name);
     } else if (user_choice == 3) {
-        vector<string> tables;
-        cat.GetTables(tables);
-        for (auto &table : tables) {
-            Schema table_schema; //TODO: pointer or copy?
-            cat.GetSchema(table, table_schema);
-            cout << table << endl;
-        }
+      cout << cat;
     } else if (user_choice == 4) {
       if (cat.Save())
         cout << "CATALOG IS UP TO DATE" << endl;

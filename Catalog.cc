@@ -1,12 +1,5 @@
-#include <iostream>
-#include "sqlite3.h"
-#include <fstream>
 
-#include "Schema.h"
 #include "Catalog.h"
-
-using namespace std;
-
 
 Catalog::Catalog(string& _fileName) {
 
@@ -29,42 +22,44 @@ bool Catalog::Save() {
 
 bool Catalog::GetNoTuples(string& _table, unsigned int& _noTuples) {
 	KeyString table_name(_table);
-	auto schema_ = schema_data_->Find(table_name);
-	if (schema_data_->AtEnd())  // TODO: verify
+	if (schema_data_->IsThere(table_name) == 0)
 		return false;
+	auto schema_ = schema_data_->Find(table_name);
 	_noTuples = schema_.getData().GetTuplesNumber();
 	return true;
 }
 
 void Catalog::SetNoTuples(string& _table, unsigned int& _noTuples) {
 	KeyString table_name(_table);
-	auto schema_ = schema_data_->Find(table_name);
-	if (!schema_data_->AtEnd())  // TODO: verify
+	if (schema_data_->IsThere(table_name) == 1) {
+		auto schema_ = schema_data_->Find(table_name);
 		schema_.getData().SetTuplesNumber(_noTuples);
+	}
 }
 
 bool Catalog::GetDataFile(string& _table, string& _path) {
 	KeyString table_name(_table);
-	auto schema_ = schema_data_->Find(table_name);
-	if (schema_data_->AtEnd())  // TODO: verify
+	if (schema_data_->IsThere(table_name) == 0)
 		return false;
+	auto schema_ = schema_data_->Find(table_name);
 	_path = schema_.getData().GetTablePath();
 	return true;
 }
 
 void Catalog::SetDataFile(string& _table, string& _path) {
 	KeyString table_name(_table);
-	auto schema_ = schema_data_->Find(table_name);
-	if (!schema_data_->AtEnd())  // TODO: verify
+	if (schema_data_->IsThere(table_name) == 1) {
+		auto schema_ = schema_data_->Find(table_name);
 		schema_.getData().SetTablePath(_path);
+	}
 }
 
 bool Catalog::GetNoDistinct(string& _table, string& _attribute,
 	unsigned int& _noDistinct) {
 	KeyString table_name(_table);
-	auto schema_ = schema_data_->Find(table_name);
-	if (schema_data_->AtEnd())  // TODO: verify
+	if (schema_data_->IsThere(table_name) == 0)
 		return false;
+	auto schema_ = schema_data_->Find(table_name);
 	int tuple_no = schema_.getData().GetDistincts(_attribute);
 	if (tuple_no == -1)
 		return false;
@@ -74,9 +69,10 @@ bool Catalog::GetNoDistinct(string& _table, string& _attribute,
 void Catalog::SetNoDistinct(string& _table, string& _attribute,
 	unsigned int& _noDistinct) {
 	KeyString table_name(_table);
-	auto schema_ = schema_data_->Find(table_name);
-	if (!schema_data_->AtEnd())  // TODO: verify
+	if (schema_data_->IsThere(table_name) == 1) {
+		auto schema_ = schema_data_->Find(table_name);
 		schema_.getData().GetDistincts(_attribute);
+	}
 }
 
 void Catalog::GetTables(vector<string>& _tables) {
@@ -85,14 +81,13 @@ void Catalog::GetTables(vector<string>& _tables) {
 		_tables.push_back(schema_data_->CurrentKey());
 		schema_data_->Advance();
 	}
-	//schema_data_->MoveToStart();
 }
 
 bool Catalog::GetAttributes(string& _table, vector<string>& _attributes) {
 	KeyString table_name(_table);
-	auto schema_ = schema_data_->Find(table_name);
-	if (schema_data_->AtEnd())  // TODO: verify
+	if (schema_data_->IsThere(table_name) == 0)
 		return false;
+	auto schema_ = schema_data_->Find(table_name);
 	auto attrs = schema_.getData().GetAtts();
 	for (auto it : attrs)
 		_attributes.push_back(it.name);
@@ -101,10 +96,9 @@ bool Catalog::GetAttributes(string& _table, vector<string>& _attributes) {
 
 bool Catalog::GetSchema(string& _table, Schema& _schema) {
 	KeyString table_name(_table);
-	auto schema_ = schema_data_->Find(table_name);
-	if (schema_data_->AtEnd())  // TODO: verify
+	if (schema_data_->IsThere(table_name) == 0)
 		return false;
-	_schema = schema_;
+	_schema = schema_data_->Find(table_name);
 	return true;
 }
 
@@ -118,9 +112,8 @@ bool Catalog::CreateTable(string& _table, vector<string>& _attributes,
 	query += ");"; //TODO: PK-FK, NOT NULL, etc.
 	sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
 
-	if(sqlite3_step(stmt) != SQLITE_DONE) {
+	if(sqlite3_step(stmt) != SQLITE_DONE)
 		return false;
-	}
 	sqlite3_finalize(stmt); //TODO: ???
 	return true;
 }
@@ -128,16 +121,23 @@ bool Catalog::CreateTable(string& _table, vector<string>& _attributes,
 bool Catalog::DropTable(string& _table) {
 	query = "DROP TABLE IF EXISTS " + _table + ";";
 	sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
-	if(sqlite3_step(stmt) != SQLITE_DONE) {
+	if(sqlite3_step(stmt) != SQLITE_DONE)
 		return false;
-	}
 	sqlite3_finalize(stmt);
 	//TODO: need to do in memory and save to db in Save function.
 	return true;
 }
 
 ostream& operator<<(ostream& _os, Catalog& _c) {
-	//TODO
+
+	vector<string> tables;
+	_c.GetTables(tables);
+	for (auto &table : tables) {
+		Schema table_schema; // TODO: pointer or copy?
+		_c.GetSchema(table, table_schema);
+		cout << table << endl;
+	}
+
 	return _os;
 }
 
@@ -153,7 +153,7 @@ void Catalog::UploadSchemas() {
         vector<unsigned int> distinct_vals;
         Schema table_schema(attributes, attr_types, distinct_vals);
 
-		unsigned int tuple_no = (unsigned int) sqlite3_column_int(stmt, 1);
+		auto tuple_no = (unsigned int) sqlite3_column_int(stmt, 1);
 		string table_path = string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2)));
 
 		ComplexSwapify<Schema> table_info(table_schema);

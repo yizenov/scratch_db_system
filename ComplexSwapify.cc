@@ -5,12 +5,7 @@
 // Created by yizenov on 2/10/19.
 //
 
-#include <iostream>
-
 #include "ComplexSwapify.h"
-#include "Swap.h"
-
-using namespace std;
 
 
 template <class Type>
@@ -33,8 +28,6 @@ ComplexSwapify <Type> :: operator Type () {
 
 template <class Type> void
 ComplexSwapify <Type> :: Swap (ComplexSwapify &withMe) {
-    //STL_SWAP(data, withMe.data);
-    //SWAP(data, withMe.data);
     OBJ_SWAP(data, withMe.data);
 }
 

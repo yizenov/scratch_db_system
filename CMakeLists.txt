@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 14)
 add_executable(db_systems
         Swap.h
         Swapify.h Swapify.cc
+        ComplexSwapify.h ComplexSwapify.cc
         Keyify.h Keyify.cc
         TwoWayList.h TwoWayList.cc
         InefficientMap.h InefficientMap.cc
@@ -13,5 +14,5 @@ add_executable(db_systems
         Config.h
         Schema.h Schema.cc
         Catalog.h Catalog.cc
-        main.cc ComplexSwapify.cc ComplexSwapify.h)
+        main.cc)
 target_link_libraries(db_systems LINK_PUBLIC sqlite3)

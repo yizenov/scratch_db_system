@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <fstream>
 
-#include "Schema.h"
 #include "InefficientMap.cc"
 #include "TwoWayList.cc"
 #include "sqlite3.h"
@@ -109,7 +109,10 @@ public:
 	 */
 	friend ostream& operator<<(ostream& _os, Catalog& _c);
 
+	// used in order to check the status of the database connection
 	bool GetConnectionStatus() { return connection_status; }
+
+	// loads catalog from the database
 	void UploadSchemas();
 };
 
