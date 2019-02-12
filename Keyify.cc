@@ -1,13 +1,7 @@
 #ifndef _KEYIFY_CC_
 #define _KEYIFY_CC_
 
-#include <iostream>
-
 #include "Keyify.h"
-#include "Swap.h"
-
-using namespace std;
-
 
 template <class Type>
 Keyify <Type> :: Keyify () {

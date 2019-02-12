@@ -2,13 +2,6 @@
 #define _EFFICIENT_MAP_C
 
 #include "EfficientMap.h"
-#include "Keyify.cc"
-
-#include <cstdlib>
-#include <iostream>
-
-using namespace std;
-
 
 // basic constructor function
 template <class Key, class Data>

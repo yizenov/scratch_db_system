@@ -1,10 +1,8 @@
 #ifndef _SCHEMA_H
 #define _SCHEMA_H
 
-#include <string>
 #include <vector>
 #include <iostream>
-#include <utility>
 
 #include "Swap.h"
 #include "Config.h"

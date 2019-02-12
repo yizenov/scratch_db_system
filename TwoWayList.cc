@@ -2,14 +2,6 @@
 #define _TWO_WAY_LIST_C
 
 #include "TwoWayList.h"
-#include "Swapify.cc"
-#include "ComplexSwapify.cc"
-
-#include <cstdlib>
-#include <iostream>
-
-using namespace std;
-
 
 // basic constructor function
 template <class Type>

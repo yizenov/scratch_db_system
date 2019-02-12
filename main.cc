@@ -1,9 +1,5 @@
-#include <iostream>
-#include <string>
-#include <vector>
 
 #include "Catalog.h"
-#include "Config.h"
 
 using namespace std;
 
@@ -37,6 +33,7 @@ int main() {
     if (user_choice == 1) {
 
       string table_name;
+      cout << "Enter table name: ";
       cin >> table_name;
 
       vector<string> attributes, types;
@@ -46,18 +43,24 @@ int main() {
       cout << "Enter number of attributes: ";
       cin >> attr_nbr;
 
+      cout << "Enter attribute name and type:" << endl;
       for (int i = 0; i < attr_nbr; i++) {
-          cin >> attribute >> type;
-          attributes.push_back(attribute);
-          types.push_back(type);
+        cout << i + 1 << ": ";
+        cin >> attribute >> type;
+        attributes.push_back(attribute);
+        types.push_back(type);
       }
 
       cat.CreateTable(table_name, attributes, types);
 
     } else if (user_choice == 2) {
       string table_name;
+      cout << "Enter table name: ";
       cin >> table_name;
-      cat.DropTable(table_name);
+      if (cat.DropTable(table_name))
+        cout << "table is deleted." << endl;
+      else
+        cout << "deletion failed." << endl;
     } else if (user_choice == 3) {
       cout << cat;
     } else if (user_choice == 4) {
@@ -66,8 +69,8 @@ int main() {
       else
         cout << "ERRORS WHILE UPDATING CATALOG" << endl;
     } else if (user_choice == 5) {
-//      if (!cat.Save())
-//        cout << "ERRORS WHILE UPDATING CATALOG" << endl;
+      //      if (!cat.Save())
+      //        cout << "ERRORS WHILE UPDATING CATALOG" << endl;
       break;
     } else {
       cout << "INVALID CHOICE" << endl;

@@ -18,7 +18,7 @@
 // efficient performance up to approximately 2^MAXLEVELS items, but there is
 // no reason to have it too large!
 
-#include <cstring>
+#include <iostream>
 
 #define MAXLEVELS 64
 
@@ -88,7 +88,7 @@ public:
 	bool AtStart ();
 	bool AtEnd ();
 
-	// operations to move the the start of end of a list
+	// operations to move the start of end of a list
 	void MoveToStart ();
 	void MoveToFinish ();
 

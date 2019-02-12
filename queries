@@ -1,3 +1,25 @@
 
-create table db_tables(name Varchar, tuple_number Int, location Varchar);
-create table db_attributes(name Varchar, type Varchar, dist_values Int);
+create table db_tables(name STRING, tuple_number INTEGER, location STRING);
+create table db_attributes(name STRING, type STRING, dist_values INTEGER);
+create table db_table_attr(t_name STRING, a_name STRING); // REFERENCES
+
+
+CREATE TABLE db_tables (
+    name VARCHAR  NOT NULL   PRIMARY KEY,
+    tuple_number integer  NOT NULL,
+    location VARCHAR
+);
+
+CREATE TABLE db_attributes (
+    name VARCHAR  NOT NULL   PRIMARY KEY,
+    type VARCHAR,
+    dist_values integer  NOT NULL
+);
+
+CREATE TABLE db_table_attr (
+    t_name VARCHAR  NOT NULL,
+    a_name VARCHAR  NOT NULL,
+    FOREIGN KEY (t_name) REFERENCES db_tables(name),
+    FOREIGN KEY (a_name) REFERENCES db_attributes(name),
+    UNIQUE (t_name, a_name) ON CONFLICT IGNORE
+);

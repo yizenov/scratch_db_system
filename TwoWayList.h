@@ -4,10 +4,8 @@
 // Basic doubly linked list
 // Type requires Swap
 
-#include "Swap.h"
 #include "Swapify.h"
-#include "ComplexSwapify.h"
-#include "Keyify.h"
+#include "ComplexSwapify.cc"
 
 using namespace std;
 

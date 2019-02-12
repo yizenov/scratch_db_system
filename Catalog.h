@@ -1,10 +1,7 @@
 #ifndef _CATALOG_H
 #define _CATALOG_H
 
-#include <string>
-#include <vector>
 #include <set>
-#include <iostream>
 #include <fstream>
 
 #include "InefficientMap.cc"
@@ -29,6 +26,10 @@ private:
     sqlite3_stmt *stmt;
     string query;
     int rc;
+
+	string table_col1 = "name", table_col2 = "tuple_number", table_col3 = "location";
+    string table_attr_col1 = "t_name", table_attr_col2 = "a_name";
+    string attr_col1 = "name", attr_col2 = "type", attr_col3 = "dist_values";
 
 public:
 	/* Catalog constructor.
@@ -115,10 +116,14 @@ public:
 	 */
 	friend ostream& operator<<(ostream& _os, Catalog& _c);
 
-	// used in order to check the status of the database connection
+	/*
+	 * used in order to check the status of the database connection
+	 */
 	bool GetConnectionStatus() { return connection_status; }
 
-	// loads catalog from the database
+	/*
+	 * loads catalog from the database
+	 */
 	void UploadSchemas();
 };
 

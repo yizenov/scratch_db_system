@@ -1,9 +1,8 @@
 #ifndef _INEFFICIENT_MAP_H
 #define _INEFFICIENT_MAP_H
 
-#include "Keyify.h"
-#include "Swap.h"
 #include "TwoWayList.h"
+#include "Keyify.cc"
 
 using namespace std;
 

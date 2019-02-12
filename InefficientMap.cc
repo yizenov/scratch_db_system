@@ -2,13 +2,6 @@
 #define _INEFFICIENT_MAP_C
 
 #include "InefficientMap.h"
-#include "Keyify.cc"
-
-#include <cstdlib>
-#include <iostream>
-
-using namespace std;
-
 
 template <class Key, class Data> void
 InefficientMap <Key, Data> :: SuckUp (InefficientMap &suckMe) {

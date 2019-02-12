@@ -1,13 +1,7 @@
 #ifndef _SWAPIFY_CC_
 #define _SWAPIFY_CC_
 
-#include <iostream>
-
 #include "Swapify.h"
-#include "Swap.h"
-
-using namespace std;
-
 
 template <class Type>
 Swapify <Type> :: Swapify () {
