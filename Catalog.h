@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 #include <iostream>
 #include <fstream>
 
@@ -66,6 +67,11 @@ public:
 	 */
 	bool GetNoDistinct(string& _table, string& _attribute, unsigned int& _noDistinct);
 	void SetNoDistinct(string& _table, string& _attribute, unsigned int& _noDistinct);
+
+	/* Get the type in _attribute of _table.
+	 * Get returns true if _table exists, false otherwise.
+	 */
+	bool GetAttributeType(string& _table, string& _attribute, string& _attrType);
 
 	/* Return the tables from the catalog.
 	 */

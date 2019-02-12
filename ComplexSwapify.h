@@ -22,7 +22,7 @@ public:
     ComplexSwapify (const Type castFromMe);
     void CopyFrom(ComplexSwapify& FromMe);
     operator Type();
-    Type& getData() { return data; };
+    Type& GetData() { return data; };
 
     ComplexSwapify ();
     virtual ~ComplexSwapify ();

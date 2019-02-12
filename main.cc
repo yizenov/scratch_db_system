@@ -66,8 +66,8 @@ int main() {
       else
         cout << "ERRORS WHILE UPDATING CATALOG" << endl;
     } else if (user_choice == 5) {
-      if (!cat.Save())
-        cout << "ERRORS WHILE UPDATING CATALOG" << endl;
+//      if (!cat.Save())
+//        cout << "ERRORS WHILE UPDATING CATALOG" << endl;
       break;
     } else {
       cout << "INVALID CHOICE" << endl;

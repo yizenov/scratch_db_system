@@ -151,7 +151,7 @@ int Schema::Project(vector<int>& _attsToKeep) {
 	return 0;
 }
 
-void Schema::SetTuplesNumber(unsigned int _tupleNumber) { tuple_no = _tupleNumber; }
+void Schema::SetTuplesNumber(unsigned int &_tupleNumber) { tuple_no = _tupleNumber; }
 unsigned int Schema::GetTuplesNumber() { return tuple_no; }
 
 void Schema::SetTablePath(string& _tablePath) { table_path = _tablePath; }

@@ -93,7 +93,7 @@ public:
 	friend ostream& operator<<(ostream& _os, Schema& _c);
 
 	// getter/setter for number of tuples in the table
-	void SetTuplesNumber(unsigned int _tupleNumber);
+	void SetTuplesNumber(unsigned int& _tupleNumber);
 	unsigned int GetTuplesNumber();
 
 	// getter/setter for the path of the table

@@ -22,6 +22,7 @@ using namespace std;
 // path to database
 #define DB_FILE "/home/yizenov/CLionProjects/db_systems/catalog.sqlite" //TODO: need global path
 #define DB_TABLE_LIST "db_tables"
+#define DB_TABLE_ATTR_LIST "db_table_attr"
 #define DB_ATTRIBUTE_LIST "db_attributes"
 
 /* source of comparison operand:
