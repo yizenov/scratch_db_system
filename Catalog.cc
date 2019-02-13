@@ -10,7 +10,8 @@ Catalog::Catalog(string &_fileName) {
   } else {
     if (sqlite3_open(_fileName.c_str(), &catalog_db) == SQLITE_OK) {
       connection_status = true;
-      cout << "database is connected." << endl;
+      UploadSchemas();
+      cout << "database is connected." << endl << endl;
     } else {
       connection_status = false;
       cout << "database is not connected." << endl;
@@ -92,13 +93,13 @@ bool Catalog::Save() {
 
     for (auto att : attribute_infos) {
 
-      string attr_type = "UNKNOWN";
+      string attr_type = "Unknown";
       if (att.type == Integer)
-        attr_type = "INTEGER";
+        attr_type = "Integer"; //"INTEGER";
       else if (att.type == Float)
-        attr_type = "FLOAT";
+        attr_type = "Float"; //"FLOAT";
       else if (att.type == String)
-        attr_type = "STRING";
+        attr_type = "String"; //"STRING";
 
       query = "INSERT OR REPLACE INTO " DB_ATTRIBUTE_LIST "(" + attr_col1 +
               "," + attr_col2 + "," + attr_col3 + ") VALUES('" + att.name +
@@ -168,7 +169,8 @@ void Catalog::SetNoTuples(string &_table, unsigned int &_noTuples) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 1) {
     auto schema_ = schema_data_->Find(table_name);
-    schema_.GetData().SetTuplesNumber(_noTuples); // TODO: doesn't work
+    schema_.GetData().SetTuplesNumber(_noTuples);
+    schema_data_->Find(table_name).Swap(schema_);
   }
 }
 
@@ -186,6 +188,7 @@ void Catalog::SetDataFile(string &_table, string &_path) {
   if (schema_data_->IsThere(table_name) == 1) {
     auto schema_ = schema_data_->Find(table_name);
     schema_.GetData().SetTablePath(_path);
+    schema_data_->Find(table_name).Swap(schema_);
   }
 }
 
@@ -206,7 +209,8 @@ void Catalog::SetNoDistinct(string &_table, string &_attribute,
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 1) {
     auto schema_ = schema_data_->Find(table_name);
-    schema_.GetData().GetDistincts(_attribute);
+    schema_.GetData().SetDistincts(_attribute, _noDistinct);
+    schema_data_->Find(table_name).Swap(schema_);
   }
 }
 
@@ -222,13 +226,13 @@ bool Catalog::GetAttributeType(string &_table, string &_attribute,
 
   Type att_type = schema_.GetData().FindType(_attribute);
   if (att_type == Integer)
-    _attrType = "INTEGER";
+    _attrType = "Integer";  //"INTEGER";
   else if (att_type == Float)
-    _attrType = "FLOAT";
+    _attrType = "Float";  //"FLOAT";
   else if (att_type == String)
-    _attrType = "STRING";
+    _attrType = "String"; //"STRING";
   else
-    _attrType = "NONE";
+    _attrType = "Unknown";
 
   return true;
 }
@@ -264,6 +268,8 @@ bool Catalog::CreateTable(string &_table, vector<string> &_attributes,
                           vector<string> &_attributeTypes) {
 
   KeyString table_data(_table);
+  if (schema_data_->IsThere(table_data) != 0)
+    return false;
   vector<unsigned int> distinct_values(_attributes.size(), 0);
   Schema table_schema(_attributes, _attributeTypes, distinct_values);
   ComplexSwapify<Schema> table_info(table_schema);
@@ -273,11 +279,14 @@ bool Catalog::CreateTable(string &_table, vector<string> &_attributes,
   table_info.GetData().SetTablePath(default_path);
   schema_data_->Insert(table_data, table_info);
 
+  table_data = _table;
   return schema_data_->IsThere(table_data) != 0;
 }
 
 bool Catalog::DropTable(string &_table) {
   KeyString table_info(_table);
+  if (schema_data_->IsThere(table_info) == 0)
+    return false;
   KeyString table_name("");
   vector<string> attributes, attr_types;
   vector<unsigned int> distinct_values;
@@ -295,7 +304,7 @@ ostream &operator<<(ostream &_os, Catalog &_c) {
 
   _c.GetTables(tables);
   for (auto &table : tables) {
-    cout << "table_name: " << table;
+    cout << "TABLE_NAME: " << table;
 
     if (!_c.GetSchema(table, table_schema)) {
       cout << "; NO SCHEMA." << endl;
@@ -312,7 +321,7 @@ ostream &operator<<(ostream &_os, Catalog &_c) {
     else
       cout << "; path: NO PATH" << endl;
 
-    cout << "attributes:";
+    cout << "ATTRIBUTES:";
     if (!_c.GetAttributes(table, table_attributes) ||
         table_attributes.empty()) {
       cout << " NO ATTRIBUTES" << endl;

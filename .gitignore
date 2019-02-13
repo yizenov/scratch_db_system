@@ -6,6 +6,8 @@
 .idea/vcs.xml
 Notes.txt
 catalog.sqlite
+*.o
+*.out
 
 # User-specific stuff
 .idea/**/workspace.xml

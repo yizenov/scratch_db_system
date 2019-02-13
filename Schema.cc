@@ -31,9 +31,9 @@ Schema::Schema(vector<string>& _attributes,	vector<string>& _attributeTypes,
 		Attribute a;
 		a.name = _attributes[i];
 		a.noDistinct = _distincts[i];
-		if (_attributeTypes[i] == "INTEGER") a.type = Integer;
-		else if (_attributeTypes[i] == "FLOAT") a.type = Float;
-		else if (_attributeTypes[i] == "STRING") a.type = String;
+		if (_attributeTypes[i] == "Integer") a.type = Integer; //INTEGER
+		else if (_attributeTypes[i] == "Float") a.type = Float; //FLOAT
+		else if (_attributeTypes[i] == "String") a.type = String; //STRING
 		
 		atts.push_back(a);
 	}
@@ -64,8 +64,8 @@ Schema& Schema::operator=(const Schema& _other) {
 
 void Schema::Swap(Schema& _other) {
 	atts.swap(_other.atts);
-	tuple_no = _other.tuple_no;
-	table_path = _other.table_path;
+	SWAP(tuple_no, _other.tuple_no);
+	SWAP(table_path, _other.table_path);
 }
 
 int Schema::Append(Schema& _other) {
@@ -105,6 +105,12 @@ int Schema::GetDistincts(string& _attName) {
 	if (pos == -1) return -1;
 
 	return atts[pos].noDistinct;
+}
+
+void Schema::SetDistincts(string& _attName, unsigned int& _distNo) {
+	int pos = Index(_attName);
+	if (pos != -1)
+		SWAP(atts[pos].noDistinct, _distNo);
 }
 
 int Schema::RenameAtt(string& _oldName, string& _newName) {
@@ -161,16 +167,16 @@ ostream& operator<<(ostream& _os, Schema& _c) {
 
 		switch(_c.atts[i].type) {
 			case Integer:
-				_os << "INTEGER";
+				_os << "Integer"; //INTEGER
 				break;
 			case Float:
-				cout << "FLOAT";
+				cout << "Float"; //FLOAT
 				break;
 			case String:
-				cout << "STRING";
+				cout << "String"; //STRING
 				break;
 			default:
-				cout << "UNKNOWN";
+				cout << "Unknown"; //UNKNOWN
 				break;
 		}
 

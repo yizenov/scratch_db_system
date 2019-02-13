@@ -72,6 +72,7 @@ public:
 	// find number of distincts of specified attribute
 	// return -1 if attribute is not present
 	int GetDistincts(string& _attName);
+	void SetDistincts(string& _attName, unsigned int& _distNo);
 
 	// rename an attribute
 	int RenameAtt(string& _oldName, string& _newName);
