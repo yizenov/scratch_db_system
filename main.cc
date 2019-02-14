@@ -65,13 +65,23 @@ int main (int argc, char* argv[]) {
 
   clock_t end = clock();
   double elapsed_secs1 = double(end - begin) / CLOCKS_PER_SEC;
+  cout << "Runtime (INSERT TABLES+ATTRIBUTES): " << elapsed_secs1 << endl;
+
+  ////////////////////////////////
   begin = clock();
-
-  ////////////////////////////////
   catalog.Save();
+  end = clock();
+  double elapsed_secs2 = double(end - begin) / CLOCKS_PER_SEC;
+  cout << "Runtime (SAVE TABLES): " << elapsed_secs2 << endl;
+
+  begin = clock();
   cout << catalog << endl; cout.flush();
+  end = clock();
+  double elapsed_secs3 = double(end - begin) / CLOCKS_PER_SEC;
+  cout << "Runtime (PRINT CATALOG): " << elapsed_secs3 << endl;
 
   ////////////////////////////////
+  begin = clock();
   vector<string> tables;
   catalog.GetTables(tables);
   for (vector<string>::iterator it = tables.begin();
@@ -81,11 +91,11 @@ int main (int argc, char* argv[]) {
   cout << endl;
 
   end = clock();
-  double elapsed_secs2 = double(end - begin) / CLOCKS_PER_SEC;
-  begin = clock();
-
+  double elapsed_secs4 = double(end - begin) / CLOCKS_PER_SEC;
+  cout << "Runtime (PRINT TABLES): " << elapsed_secs4 << endl;
 
   ////////////////////////////////
+  begin = clock();
   for (int i = 0; i < 1000; i++) {
     int r = rand() % tNo + 1; //TODO: need to be in range of number of tables
     char tN[20]; sprintf(tN, "T_%d", r);
@@ -124,11 +134,11 @@ int main (int argc, char* argv[]) {
   }
 
   end = clock();
-  double elapsed_secs3 = double(end - begin) / CLOCKS_PER_SEC;
-  begin = clock();
-
+  double elapsed_secs5 = double(end - begin) / CLOCKS_PER_SEC;
+  cout << "Runtime (PRINT SCHEMAS): " << elapsed_secs5 << endl;
 
   ////////////////////////////////
+  begin = clock();
   for (int i = 0; i < 5; i++) {
     char tN[20]; sprintf(tN, "T_%d", i);
     string tName = tN;
@@ -141,17 +151,29 @@ int main (int argc, char* argv[]) {
       cout << "DROP TABLE " << tName << " FAIL" << endl;
     }
   }
-
-  catalog.Save();
-  cout << catalog << endl; cout.flush();
-
   end = clock();
-  double elapsed_secs4 = double(end - begin) / CLOCKS_PER_SEC;
+  double elapsed_secs6 = double(end - begin) / CLOCKS_PER_SEC;
+  cout << "Runtime (DROP TABLES): " << elapsed_secs6 << endl;
+
+  begin = clock();
+  catalog.Save();
+  end = clock();
+  double elapsed_secs7 = double(end - begin) / CLOCKS_PER_SEC;
+  cout << "Runtime (SAVE TABLES): " << elapsed_secs7 << endl;
+
+  begin = clock();
+  cout << catalog << endl; cout.flush();
+  end = clock();
+  double elapsed_secs8 = double(end - begin) / CLOCKS_PER_SEC;
 
   cout << "Runtime (INSERT TABLES+ATTRIBUTES): " << elapsed_secs1 << endl;
-  cout << "Runtime (PRINT TABLES): " << elapsed_secs2 << endl;
-  cout << "Runtime (PRINT SCHEMAS): " << elapsed_secs3 << endl;
-  cout << "Runtime (DROP TABLES): " << elapsed_secs4 << endl;
+  cout << "Runtime (SAVE TABLES): " << elapsed_secs2 << endl;
+  cout << "Runtime (PRINT CATALOG): " << elapsed_secs3 << endl;
+  cout << "Runtime (PRINT TABLES): " << elapsed_secs4 << endl;
+  cout << "Runtime (PRINT SCHEMAS): " << elapsed_secs5 << endl;
+  cout << "Runtime (DROP TABLES): " << elapsed_secs6 << endl;
+  cout << "Runtime (SAVE TABLES): " << elapsed_secs7 << endl;
+  cout << "Runtime (PRINT CATALOG): " << elapsed_secs8 << endl;
 
   return 0;
 }

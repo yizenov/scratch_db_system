@@ -41,7 +41,9 @@ bool Catalog::Save() {
     string table_name =
         string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)));
     KeyString table_data(table_name);
-    if (schema_data_->IsThere(table_data) == 0) {
+    Schema table_schema = schema_data_->CurrentData().GetData();
+    if (schema_data_->IsThere(table_data) == 0 ||
+        table_schema.GetSchemaStatus()) { // if row is not present in memory or has been updated
 
       sqlite3_stmt *inner_stmt;
       string inner_query = "DELETE FROM " DB_TABLE_ATTR_LIST " WHERE " +
@@ -72,7 +74,7 @@ bool Catalog::Save() {
       sqlite3_finalize(inner_stmt);
 
     } else {
-      // existing tables
+      // existing tables in database
       existing_tables.insert(table_name);
     }
   }
@@ -85,11 +87,10 @@ bool Catalog::Save() {
     Schema table_schema = schema_data_->CurrentData().GetData();
 
     auto it = existing_tables.find(table_name);
-    if (it != existing_tables.end() && !table_schema.GetSchemaStatus()) { // skips existing tables
-      schema_data_->Advance();
+    if (it != existing_tables.end()) {
+      schema_data_->Advance(); // skips existing and unchanged tables in db
       continue;
     }
-
 
     vector<Attribute> attribute_infos = table_schema.GetAtts();
 
@@ -103,9 +104,9 @@ bool Catalog::Save() {
       else if (att.type == String)
         attr_type = "String"; //"STRING";
 
-      query = "INSERT OR REPLACE INTO " DB_ATTRIBUTE_LIST "(" + attr_col1 +
-              "," + attr_col2 + "," + attr_col3 + ") VALUES('" + att.name +
-              "','" + attr_type + "'," + to_string(att.noDistinct) + ");";
+      query = "INSERT INTO " DB_ATTRIBUTE_LIST "(" + attr_col1 + "," +
+              attr_col2 + "," + attr_col3 + ") VALUES('" + att.name + "','" +
+              attr_type + "'," + to_string(att.noDistinct) + ");";
       sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
       if (sqlite3_step(stmt) != SQLITE_DONE) {
         cout << sqlite3_errmsg(catalog_db) << endl;
@@ -117,9 +118,9 @@ bool Catalog::Save() {
       }
       sqlite3_finalize(stmt);
 
-      query = "INSERT OR REPLACE INTO " DB_TABLE_ATTR_LIST "(" +
-              table_attr_col1 + "," + table_attr_col2 + ") VALUES('" +
-              table_name + "','" + att.name + "');";
+      query = "INSERT INTO " DB_TABLE_ATTR_LIST "(" + table_attr_col1 + "," +
+              table_attr_col2 + ") VALUES('" + table_name + "','" + att.name +
+              "');";
       sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
       if (sqlite3_step(stmt) != SQLITE_DONE) {
         cout << sqlite3_errmsg(catalog_db) << endl;
@@ -134,8 +135,8 @@ bool Catalog::Save() {
 
     // TODO: roll-back if failure happens
 
-    query = "INSERT OR REPLACE INTO " DB_TABLE_LIST "(" + table_col1 + "," +
-            table_col2 + "," + table_col3 + ") VALUES('" + table_name + "'," +
+    query = "INSERT INTO " DB_TABLE_LIST "(" + table_col1 + "," + table_col2 +
+            "," + table_col3 + ") VALUES('" + table_name + "'," +
             to_string(table_schema.GetTuplesNumber()) + ",'" +
             table_schema.GetTablePath() + "');";
     sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
@@ -343,9 +344,8 @@ ostream &operator<<(ostream &_os, Catalog &_c) {
         _os << "; distinct values: " << dist_no << endl;
       else
         _os << "; distinct values: ZERO" << endl;
-
-      table_attributes.clear();
     }
+    table_attributes.clear();
   }
 
   return _os;
