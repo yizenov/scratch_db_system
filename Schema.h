@@ -41,6 +41,7 @@ private:
 	vector<Attribute> atts;
 	unsigned int tuple_no;
 	string table_path;
+	bool isChanged;
 
 public:
 	// default constructor
@@ -98,6 +99,9 @@ public:
 	// getter/setter for the path of the table
 	void SetTablePath(string& _tablePath);
 	string GetTablePath();
+
+	// whether the schame has changes
+    bool GetSchemaStatus();
 };
 
 #endif //_SCHEMA

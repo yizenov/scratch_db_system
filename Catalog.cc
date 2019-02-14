@@ -82,13 +82,15 @@ bool Catalog::Save() {
   schema_data_->MoveToStart();
   while (!schema_data_->AtEnd()) {
     string table_name = schema_data_->CurrentKey();
+    Schema table_schema = schema_data_->CurrentData().GetData();
+
     auto it = existing_tables.find(table_name);
-    if (it != existing_tables.end()) { // skips existing tables
+    if (it != existing_tables.end() && !table_schema.GetSchemaStatus()) { // skips existing tables
       schema_data_->Advance();
       continue;
     }
 
-    Schema table_schema = schema_data_->CurrentData().GetData();
+
     vector<Attribute> attribute_infos = table_schema.GetAtts();
 
     for (auto att : attribute_infos) {
@@ -226,9 +228,9 @@ bool Catalog::GetAttributeType(string &_table, string &_attribute,
 
   Type att_type = schema_.GetData().FindType(_attribute);
   if (att_type == Integer)
-    _attrType = "Integer";  //"INTEGER";
+    _attrType = "Integer"; //"INTEGER";
   else if (att_type == Float)
-    _attrType = "Float";  //"FLOAT";
+    _attrType = "Float"; //"FLOAT";
   else if (att_type == String)
     _attrType = "String"; //"STRING";
   else
@@ -273,10 +275,10 @@ bool Catalog::CreateTable(string &_table, vector<string> &_attributes,
   vector<unsigned int> distinct_values(_attributes.size(), 0);
   Schema table_schema(_attributes, _attributeTypes, distinct_values);
   ComplexSwapify<Schema> table_info(table_schema);
-  unsigned int default_value = 0;
-  string default_path = "NO PATH";
-  table_info.GetData().SetTuplesNumber(default_value);
-  table_info.GetData().SetTablePath(default_path);
+  //  unsigned int default_value = 0;
+  //  string default_path = "NO PATH";
+  //  table_info.GetData().SetTuplesNumber(default_value);
+  //  table_info.GetData().SetTablePath(default_path);
   schema_data_->Insert(table_data, table_info);
 
   table_data = _table;
@@ -304,43 +306,43 @@ ostream &operator<<(ostream &_os, Catalog &_c) {
 
   _c.GetTables(tables);
   for (auto &table : tables) {
-    cout << "TABLE_NAME: " << table;
+    _os << "TABLE_NAME: " << table;
 
     if (!_c.GetSchema(table, table_schema)) {
-      cout << "; NO SCHEMA." << endl;
+      _os << "; NO SCHEMA." << endl;
       continue;
     }
 
     if (_c.GetNoTuples(table, tuple_no))
-      cout << "; number of tuples: " << tuple_no;
+      _os << "; number of tuples: " << tuple_no;
     else
-      cout << "; number of tuples: ZERO";
+      _os << "; number of tuples: ZERO";
 
     if (_c.GetDataFile(table, table_path))
-      cout << "; path: " << table_path << endl;
+      _os << "; path: " << table_path << endl;
     else
-      cout << "; path: NO PATH" << endl;
+      _os << "; path: NO PATH" << endl;
 
-    cout << "ATTRIBUTES:";
+    _os << "ATTRIBUTES:";
     if (!_c.GetAttributes(table, table_attributes) ||
         table_attributes.empty()) {
-      cout << " NO ATTRIBUTES" << endl;
+      _os << " NO ATTRIBUTES" << endl;
       continue;
     }
-    cout << endl;
+    _os << endl;
 
     for (auto attr : table_attributes) {
-      cout << "\tname: " << attr;
+      _os << "\tname: " << attr;
 
       if (_c.GetAttributeType(table, attr, attr_type))
-        cout << "; type: " << attr_type;
+        _os << "; type: " << attr_type;
       else
-        cout << "; type: NO TYPE";
+        _os << "; type: NO TYPE";
 
       if (_c.GetNoDistinct(table, attr, dist_no))
-        cout << "; distinct values: " << dist_no << endl;
+        _os << "; distinct values: " << dist_no << endl;
       else
-        cout << "; distinct values: ZERO" << endl;
+        _os << "; distinct values: ZERO" << endl;
 
       table_attributes.clear();
     }

@@ -58,6 +58,7 @@ Schema& Schema::operator=(const Schema& _other) {
 	}
 	tuple_no = _other.tuple_no;
 	table_path = _other.table_path;
+	isChanged = true;
 
 	return *this;
 }
@@ -66,6 +67,7 @@ void Schema::Swap(Schema& _other) {
 	atts.swap(_other.atts);
 	SWAP(tuple_no, _other.tuple_no);
 	SWAP(table_path, _other.table_path);
+	isChanged = true;
 }
 
 int Schema::Append(Schema& _other) {
@@ -78,8 +80,9 @@ int Schema::Append(Schema& _other) {
 		Attribute a; a = _other.atts[i];
 		atts.push_back(a);
 	}
-	tuple_no = _other.tuple_no;
-	table_path = _other.table_path;
+	SWAP(tuple_no, _other.tuple_no);
+	SWAP(table_path, _other.table_path);
+	isChanged = true;
 
 	return 0;
 }
@@ -109,8 +112,10 @@ int Schema::GetDistincts(string& _attName) {
 
 void Schema::SetDistincts(string& _attName, unsigned int& _distNo) {
 	int pos = Index(_attName);
-	if (pos != -1)
+	if (pos != -1) {
 		SWAP(atts[pos].noDistinct, _distNo);
+		isChanged = true;
+	}
 }
 
 int Schema::RenameAtt(string& _oldName, string& _newName) {
@@ -122,6 +127,7 @@ int Schema::RenameAtt(string& _oldName, string& _newName) {
 
 
 	atts[pos].name = _newName;
+	isChanged = true;
 
 	return 0;
 }
@@ -154,11 +160,21 @@ int Schema::Project(vector<int>& _attsToKeep) {
 	return 0;
 }
 
-void Schema::SetTuplesNumber(unsigned int &_tupleNumber) { tuple_no = _tupleNumber; }
+void Schema::SetTuplesNumber(unsigned int &_tupleNumber) {
+	SWAP(tuple_no, _tupleNumber);
+	isChanged = true;
+}
+
 unsigned int Schema::GetTuplesNumber() { return tuple_no; }
 
-void Schema::SetTablePath(string& _tablePath) { table_path = _tablePath; }
+void Schema::SetTablePath(string& _tablePath) {
+	SWAP(table_path, _tablePath);
+	isChanged = true;
+}
+
 string Schema::GetTablePath() { return table_path; }
+
+bool Schema::GetSchemaStatus() { return isChanged; }
 
 ostream& operator<<(ostream& _os, Schema& _c) {
 	_os << "(";
@@ -170,13 +186,13 @@ ostream& operator<<(ostream& _os, Schema& _c) {
 				_os << "Integer"; //INTEGER
 				break;
 			case Float:
-				cout << "Float"; //FLOAT
+				_os << "Float"; //FLOAT
 				break;
 			case String:
-				cout << "String"; //STRING
+				_os << "String"; //STRING
 				break;
 			default:
-				cout << "Unknown"; //UNKNOWN
+				_os << "Unknown"; //UNKNOWN
 				break;
 		}
 

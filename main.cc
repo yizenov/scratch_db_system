@@ -10,7 +10,7 @@ int main (int argc, char* argv[]) {
   clock_t begin = clock();
 
   if (argc != 4) {
-    cout << "Usage: main [sqlite_file] [no_tables] [no_atts]" << endl;
+      cout << "Usage: main [sqlite_file] [no_tables] [no_atts]" << endl;
     return -1;
   }
 
@@ -20,7 +20,6 @@ int main (int argc, char* argv[]) {
 
   Catalog catalog(dbFile);
   cout << catalog << endl; cout.flush();
-
 
   ////////////////////////////////
   for (int i = 0; i < tNo; i++) {
@@ -71,7 +70,6 @@ int main (int argc, char* argv[]) {
   ////////////////////////////////
   catalog.Save();
   cout << catalog << endl; cout.flush();
-
 
   ////////////////////////////////
   vector<string> tables;
