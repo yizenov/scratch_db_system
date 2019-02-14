@@ -1,6 +1,15 @@
 
 #include "Catalog.h"
 
+bool isItError(int rc) {
+  // only OK, ROW, DONE are non-error result codes
+  if (rc != SQLITE_OK && rc != SQLITE_ROW && rc != SQLITE_DONE) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 Catalog::Catalog(string &_fileName) {
 
   ifstream input_file(_fileName);
@@ -9,6 +18,8 @@ Catalog::Catalog(string &_fileName) {
     cout << "database file wasn't found." << endl;
   } else {
     if (sqlite3_open(_fileName.c_str(), &catalog_db) == SQLITE_OK) {
+      // sqlite3_exec(catalog_db,"PRAGMA
+      // schema.page_size=16384",NULL,NULL,NULL);
       connection_status = true;
       UploadSchemas();
       cout << "database is connected." << endl << endl;
@@ -23,6 +34,7 @@ Catalog::~Catalog() {
   sqlite3_close(catalog_db);
   connection_status = false;
   schema_data_->Clear();
+  delete schema_data_;
 }
 
 bool Catalog::Save() {
@@ -31,70 +43,114 @@ bool Catalog::Save() {
     cout << "database is not connected." << endl;
     return false;
   }
+    sqlite3_exec(catalog_db, "BEGIN TRANSACTION", NULL, NULL, &error_msg);
 
-  // dropping in-memory deleted tables
-  query = "SELECT " + table_col1 + " FROM " DB_TABLE_LIST ";";
-  sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
-  set<string> existing_tables;
+    // dropping in-memory deleted tables
+    query = "SELECT " + table_col1 + " FROM " DB_TABLE_LIST ";";
+    sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
+    set<string> existing_tables;
 
-  while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-    string table_name =
-        string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)));
-    KeyString table_data(table_name);
-    Schema table_schema = schema_data_->CurrentData().GetData();
-    if (schema_data_->IsThere(table_data) == 0 ||
-        table_schema.GetSchemaStatus()) { // if row is not present in memory or has been updated
+    sqlite3_stmt *inner_stmt_one;
+    string inner_query_one =
+        "DELETE FROM " DB_TABLE_ATTR_LIST " WHERE " + table_attr_col1 + " = ?1;";
+    //sqlite3_prepare_v2(catalog_db, inner_query_one.c_str(), -1, &inner_stmt_one, nullptr);
 
-      sqlite3_stmt *inner_stmt;
-      string inner_query = "DELETE FROM " DB_TABLE_ATTR_LIST " WHERE " +
-                           table_attr_col1 + " = '" + table_name + "';";
-      sqlite3_prepare_v2(catalog_db, inner_query.c_str(), -1, &inner_stmt,
-                         nullptr);
-      if (sqlite3_step(inner_stmt) != SQLITE_DONE) {
-        cout << sqlite3_errmsg(catalog_db) << endl;
-        cout << "pairs where " << table_attr_col1 << " = " << table_name
-             << ") weren't deleted in the database." << endl;
-        sqlite3_finalize(inner_stmt);
-        return false;
+    sqlite3_stmt *inner_stmt_two;
+    string inner_query_two =
+        "DELETE FROM " DB_TABLE_LIST " WHERE " + table_col1 + " = ?1;";
+    sqlite3_prepare_v2(catalog_db, inner_query_two.c_str(), -1,
+    &inner_stmt_two, nullptr);
+
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+      string table_name =
+          string(reinterpret_cast<const char *>(sqlite3_column_text(stmt,
+          0)));
+      KeyString table_data(table_name);
+      Schema table_schema = schema_data_->CurrentData().GetData();
+      if (schema_data_->IsThere(table_data) == 0) { // ||
+        // table_schema.GetSchemaStatus()) { // if row is not present in memory or
+        // has been updated
+
+          sqlite3_prepare_v2(catalog_db, inner_query_one.c_str(), -1, &inner_stmt_one, nullptr);
+        sqlite3_bind_text(inner_stmt_one, 1, table_name.c_str(), -1, nullptr);
+        rc = sqlite3_step(inner_stmt_one);
+        if (isItError(rc)) {
+          cout << sqlite3_errmsg(catalog_db) << endl;
+          cout << "pairs where " << table_attr_col1 << " = " << table_name
+               << ") weren't deleted in the database." << endl;
+          sqlite3_finalize(inner_stmt_one);
+          return false;
+        }
+        sqlite3_finalize(inner_stmt_one);
+
+        sqlite3_bind_text(inner_stmt_two, 1, table_name.c_str(), -1, nullptr);
+        rc = sqlite3_step(inner_stmt_two);
+        if (isItError(rc) != SQLITE_DONE) {
+          cout << sqlite3_errmsg(catalog_db) << endl;
+          cout << "table: " << table_name << " wasn't deleted in the database." << endl;
+          sqlite3_finalize(inner_stmt_two);
+          return false;
+        }
+        sqlite3_finalize(inner_stmt_two);
+
+      } else {
+        // existing tables in database
+        existing_tables.insert(table_name);
       }
-      sqlite3_finalize(inner_stmt);
-
-      inner_query = "DELETE FROM " DB_TABLE_LIST " WHERE " + table_col1 +
-                    " = '" + table_name + "';";
-
-      sqlite3_prepare_v2(catalog_db, inner_query.c_str(), -1, &inner_stmt,
-                         nullptr);
-      if (sqlite3_step(inner_stmt) != SQLITE_DONE) {
-        cout << sqlite3_errmsg(catalog_db) << endl;
-        cout << "table: " << table_name << " wasn't deleted in the database."
-             << endl;
-        sqlite3_finalize(inner_stmt);
-        return false;
-      }
-      sqlite3_finalize(inner_stmt);
-
-    } else {
-      // existing tables in database
-      existing_tables.insert(table_name);
     }
-  }
-  sqlite3_finalize(stmt);
+    sqlite3_finalize(stmt);
+
+    sqlite3_exec(catalog_db, "END TRANSACTION", NULL, NULL, &error_msg);
+
+    sqlite3_exec(catalog_db, "BEGIN TRANSACTION", NULL, NULL, &error_msg);
+
+  string attr_query = "INSERT INTO " DB_ATTRIBUTE_LIST " (" + attr_col1 + "," +
+                      attr_col2 + "," + attr_col3 + ") VALUES (?1,?2,?3);";
+  sqlite3_stmt *stmt_attr;
+  sqlite3_prepare_v2(catalog_db, attr_query.c_str(), -1, &stmt_attr, nullptr);
+
+  string table_attr_query = "INSERT INTO " DB_TABLE_ATTR_LIST " (" +
+                            table_attr_col1 + "," + table_attr_col2 +
+                            ") VALUES (?1,?2);";
+  sqlite3_stmt *stmt_table_attr;
+   sqlite3_prepare_v2(catalog_db, table_attr_query.c_str(), -1, &stmt_table_attr, nullptr);
+
+  string table_query = "INSERT INTO " DB_TABLE_LIST " (" + table_col1 + "," +
+                       table_col2 + "," + table_col3 + ") VALUES (?1,?2,?3);";
+  sqlite3_stmt *stmt_table;
+   sqlite3_prepare_v2(catalog_db, table_query.c_str(), -1, &stmt_table, nullptr);
 
   // creating tables in the database
   schema_data_->MoveToStart();
   while (!schema_data_->AtEnd()) {
     string table_name = schema_data_->CurrentKey();
-    Schema table_schema = schema_data_->CurrentData().GetData();
+    Schema *table_schema = &schema_data_->CurrentData().GetData();
+    // Schema table_schema = schema_data_->CurrentData().GetData();
 
     auto it = existing_tables.find(table_name);
     if (it != existing_tables.end()) {
-      schema_data_->Advance(); // skips existing and unchanged tables in db
+      schema_data_->Advance(); // skips existing and unchanged tables in db.
       continue;
     }
 
-    vector<Attribute> attribute_infos = table_schema.GetAtts();
+          //sqlite3_prepare_v2(catalog_db, table_query.c_str(), -1, &stmt_table, nullptr);
+      sqlite3_bind_text(stmt_table, 1, table_name.c_str(), -1, SQLITE_STATIC);
+      sqlite3_bind_int(stmt_table, 2, table_schema->GetTuplesNumber());
+      sqlite3_bind_text(stmt_table, 3, table_schema->GetTablePath().c_str(), -1, SQLITE_STATIC);
+      rc = sqlite3_step(stmt_table);
+      if (isItError(rc)) {
+          cout << sqlite3_errmsg(catalog_db) << endl;
+          cout << "table: " << table_name << " wasn't inserted in the database."
+               << endl;
+          sqlite3_finalize(stmt_table);
+          return false;
+      }
+      //sqlite3_finalize(stmt_table);
+      sqlite3_clear_bindings(stmt_table);
+      sqlite3_reset(stmt_table);
 
-    for (auto att : attribute_infos) {
+    // auto vec = table_schema.GetAtts();
+    for (Attribute &att : table_schema->GetAtts()) {
 
       string attr_type = "Unknown";
       if (att.type == Integer)
@@ -104,54 +160,45 @@ bool Catalog::Save() {
       else if (att.type == String)
         attr_type = "String"; //"STRING";
 
-      query = "INSERT INTO " DB_ATTRIBUTE_LIST "(" + attr_col1 + "," +
-              attr_col2 + "," + attr_col3 + ") VALUES('" + att.name + "','" +
-              attr_type + "'," + to_string(att.noDistinct) + ");";
-      sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
-      if (sqlite3_step(stmt) != SQLITE_DONE) {
+      //sqlite3_prepare_v2(catalog_db, attr_query.c_str(), -1, &stmt_attr, nullptr);
+      sqlite3_bind_text(stmt_attr, 1, att.name.c_str(), -1, SQLITE_STATIC);
+      sqlite3_bind_text(stmt_attr, 2, attr_type.c_str(), -1, SQLITE_STATIC);
+      sqlite3_bind_int(stmt_attr, 3, att.noDistinct);
+      rc = sqlite3_step(stmt_attr);
+      if (isItError(rc)) {
         cout << sqlite3_errmsg(catalog_db) << endl;
         cout << "attribute: " << att.name << " wasn't inserted in the database."
              << endl;
-        sqlite3_finalize(stmt);
-        schema_data_->Advance();
+        sqlite3_finalize(stmt_attr);
         return false;
       }
-      sqlite3_finalize(stmt);
+      //sqlite3_finalize(stmt_attr);
+        sqlite3_clear_bindings(stmt_attr);
+        sqlite3_reset(stmt_attr);
 
-      query = "INSERT INTO " DB_TABLE_ATTR_LIST "(" + table_attr_col1 + "," +
-              table_attr_col2 + ") VALUES('" + table_name + "','" + att.name +
-              "');";
-      sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
-      if (sqlite3_step(stmt) != SQLITE_DONE) {
+//      sqlite3_prepare_v2(catalog_db, table_attr_query.c_str(), -1,
+//                         &stmt_table_attr, nullptr);
+      sqlite3_bind_text(stmt_table_attr, 1, table_name.c_str(), -1, nullptr);
+      sqlite3_bind_text(stmt_table_attr, 2, att.name.c_str(), -1, nullptr);
+      rc = sqlite3_step(stmt_table_attr);
+      if (isItError(rc)) {
         cout << sqlite3_errmsg(catalog_db) << endl;
         cout << "pair: (" << table_name << "," << att.name
              << ") wasn't inserted in the database." << endl;
-        sqlite3_finalize(stmt);
-        schema_data_->Advance();
+        sqlite3_finalize(stmt_table_attr);
         return false;
       }
-      sqlite3_finalize(stmt);
+      //sqlite3_finalize(stmt_table_attr);
+        sqlite3_clear_bindings(stmt_table_attr);
+        sqlite3_reset(stmt_table_attr);
     }
 
     // TODO: roll-back if failure happens
 
-    query = "INSERT INTO " DB_TABLE_LIST "(" + table_col1 + "," + table_col2 +
-            "," + table_col3 + ") VALUES('" + table_name + "'," +
-            to_string(table_schema.GetTuplesNumber()) + ",'" +
-            table_schema.GetTablePath() + "');";
-    sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
-    if (sqlite3_step(stmt) != SQLITE_DONE) {
-      cout << sqlite3_errmsg(catalog_db) << endl;
-      cout << "table: " << table_name << " wasn't inserted in the database."
-           << endl;
-      sqlite3_finalize(stmt);
-      schema_data_->Advance();
-      return false;
-    }
-    sqlite3_finalize(stmt);
-
     schema_data_->Advance();
   }
+
+    sqlite3_exec(catalog_db, "END TRANSACTION", NULL, NULL, &error_msg);
 
   // TODO: roll-back if failure happens
   // TODO: do updates and changes (attr,path,etc. delete/update/add)
@@ -300,52 +347,18 @@ bool Catalog::DropTable(string &_table) {
 
 ostream &operator<<(ostream &_os, Catalog &_c) {
 
-  vector<string> tables, table_attributes;
-  Schema table_schema;
-  unsigned int tuple_no, dist_no;
-  string attr_type, table_path;
+  vector<string> tables;
 
   _c.GetTables(tables);
   for (auto &table : tables) {
-    _os << "TABLE_NAME: " << table;
+    _os << "TABLE_NAME: " << table << "; ";
 
+    Schema table_schema;
     if (!_c.GetSchema(table, table_schema)) {
       _os << "; NO SCHEMA." << endl;
       continue;
     }
-
-    if (_c.GetNoTuples(table, tuple_no))
-      _os << "; number of tuples: " << tuple_no;
-    else
-      _os << "; number of tuples: ZERO";
-
-    if (_c.GetDataFile(table, table_path))
-      _os << "; path: " << table_path << endl;
-    else
-      _os << "; path: NO PATH" << endl;
-
-    _os << "ATTRIBUTES:";
-    if (!_c.GetAttributes(table, table_attributes) ||
-        table_attributes.empty()) {
-      _os << " NO ATTRIBUTES" << endl;
-      continue;
-    }
-    _os << endl;
-
-    for (auto attr : table_attributes) {
-      _os << "\tname: " << attr;
-
-      if (_c.GetAttributeType(table, attr, attr_type))
-        _os << "; type: " << attr_type;
-      else
-        _os << "; type: NO TYPE";
-
-      if (_c.GetNoDistinct(table, attr, dist_no))
-        _os << "; distinct values: " << dist_no << endl;
-      else
-        _os << "; distinct values: ZERO" << endl;
-    }
-    table_attributes.clear();
+    _os << table_schema << endl;
   }
 
   return _os;
@@ -362,6 +375,20 @@ void Catalog::UploadSchemas() {
     query = "SELECT * FROM " DB_TABLE_LIST ";";
     sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
 
+    string inner_query_one = "SELECT " + table_attr_col2 +
+                             " FROM " DB_TABLE_ATTR_LIST " WHERE " +
+                             table_attr_col1 + " = ?;";
+    sqlite3_stmt *inner_stmt_one;
+    sqlite3_prepare_v2(catalog_db, inner_query_one.c_str(), -1, &inner_stmt_one,
+                       nullptr);
+
+    string inner_query_two = "SELECT " + attr_col2 + ", " + attr_col3 +
+                             " FROM " DB_ATTRIBUTE_LIST " WHERE " + attr_col1 +
+                             " = ?;";
+    sqlite3_stmt *inner_stmt_two;
+    sqlite3_prepare_v2(catalog_db, inner_query_two.c_str(), -1, &inner_stmt_two,
+                       nullptr);
+
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
       string table_name =
           string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)));
@@ -370,41 +397,29 @@ void Catalog::UploadSchemas() {
       vector<string> attributes, attr_types;
       vector<unsigned int> distinct_values;
 
-      string inner_query = "SELECT " + table_attr_col2 +
-                           " FROM " DB_TABLE_ATTR_LIST " WHERE " +
-                           table_attr_col1 + " = '" + table_name + "';";
-      sqlite3_stmt *inner_stmt;
-      sqlite3_prepare_v2(catalog_db, inner_query.c_str(), -1, &inner_stmt,
-                         nullptr);
+      sqlite3_bind_text(inner_stmt_one, 1, table_name.c_str(), -1, NULL);
+      while (sqlite3_step(inner_stmt_one) == SQLITE_ROW) {
+        string attr_name = string(reinterpret_cast<const char *>(
+            sqlite3_column_text(inner_stmt_one, 0)));
 
-      while (sqlite3_step(inner_stmt) == SQLITE_ROW) {
-        string attr_name = string(
-            reinterpret_cast<const char *>(sqlite3_column_text(inner_stmt, 0)));
-
-        string temp_query = "SELECT " + attr_col2 + ", " + attr_col3 +
-                            " FROM " DB_ATTRIBUTE_LIST " WHERE " + attr_col1 +
-                            " = '" + attr_name + "';";
-        sqlite3_stmt *temp_stmt;
-        sqlite3_prepare_v2(catalog_db, temp_query.c_str(), -1, &temp_stmt,
-                           nullptr);
-
-        while (sqlite3_step(temp_stmt) == SQLITE_ROW) {
+        sqlite3_bind_text(inner_stmt_two, 1, attr_name.c_str(), -1, NULL);
+        while (sqlite3_step(inner_stmt_two) == SQLITE_ROW) {
           string attr_type =
               string(reinterpret_cast<const char *>(sqlite3_column_text(
-                  temp_stmt, 0))); // TYPES: INTEGER, FLOAT, STRING
+                  inner_stmt_two, 0))); // TYPES: INTEGER, FLOAT, STRING
           auto dist_no = (unsigned int)sqlite3_column_int(
-              temp_stmt, 1); // TODO: extra work
+              inner_stmt_two, 1); // TODO: extra work
           attributes.push_back(attr_name);
           attr_types.push_back(attr_type);
           distinct_values.push_back(dist_no);
           break;
         }
 
-        sqlite3_finalize(temp_stmt);
+        // sqlite3_finalize(inner_stmt_two);
       }
 
       Schema table_schema(attributes, attr_types, distinct_values);
-      sqlite3_finalize(inner_stmt);
+      // sqlite3_finalize(inner_stmt_one);
 
       auto tuple_no = (unsigned int)sqlite3_column_int(stmt, 1);
       string table_path =

@@ -177,6 +177,8 @@ string Schema::GetTablePath() { return table_path; }
 bool Schema::GetSchemaStatus() { return isChanged; }
 
 ostream& operator<<(ostream& _os, Schema& _c) {
+	_os << "number of tuples: " << _c.tuple_no;
+	_os << "; path: " << _c.table_path << endl;
 	_os << "(";
 	for(int i=0; i<_c.atts.size(); i++) {
 		_os << _c.atts[i].name << ':';

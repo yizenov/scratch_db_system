@@ -13,7 +13,7 @@ ComplexSwapify <Type> :: ComplexSwapify () {
 }
 
 template <class Type>
-ComplexSwapify <Type> :: ComplexSwapify (const Type castFromMe) {
+ComplexSwapify <Type> :: ComplexSwapify (const Type &castFromMe) {
     data = castFromMe;
 }
 

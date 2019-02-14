@@ -1,4 +1,4 @@
-CC = g++ -g -O0 -Wno-deprecated -std=gnu++11
+CC = g++ -g -O0 -Wno-deprecated -std=gnu++14
 LIBS = -lsqlite3
 
 tag = -i

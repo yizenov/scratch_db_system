@@ -155,25 +155,25 @@ int main (int argc, char* argv[]) {
   double elapsed_secs6 = double(end - begin) / CLOCKS_PER_SEC;
   cout << "Runtime (DROP TABLES): " << elapsed_secs6 << endl;
 
-  begin = clock();
-  catalog.Save();
-  end = clock();
-  double elapsed_secs7 = double(end - begin) / CLOCKS_PER_SEC;
-  cout << "Runtime (SAVE TABLES): " << elapsed_secs7 << endl;
+//  begin = clock();
+//  catalog.Save();
+//  end = clock();
+//  double elapsed_secs7 = double(end - begin) / CLOCKS_PER_SEC;
+//  cout << "Runtime (SAVE TABLES): " << elapsed_secs7 << endl;
+//
+//  begin = clock();
+//  cout << catalog << endl; cout.flush();
+//  end = clock();
+//  double elapsed_secs8 = double(end - begin) / CLOCKS_PER_SEC;
 
-  begin = clock();
-  cout << catalog << endl; cout.flush();
-  end = clock();
-  double elapsed_secs8 = double(end - begin) / CLOCKS_PER_SEC;
-
-  cout << "Runtime (INSERT TABLES+ATTRIBUTES): " << elapsed_secs1 << endl;
+  cout << "\nRuntime (INSERT TABLES+ATTRIBUTES): " << elapsed_secs1 << endl;
   cout << "Runtime (SAVE TABLES): " << elapsed_secs2 << endl;
   cout << "Runtime (PRINT CATALOG): " << elapsed_secs3 << endl;
   cout << "Runtime (PRINT TABLES): " << elapsed_secs4 << endl;
   cout << "Runtime (PRINT SCHEMAS): " << elapsed_secs5 << endl;
   cout << "Runtime (DROP TABLES): " << elapsed_secs6 << endl;
-  cout << "Runtime (SAVE TABLES): " << elapsed_secs7 << endl;
-  cout << "Runtime (PRINT CATALOG): " << elapsed_secs8 << endl;
+  //cout << "Runtime (SAVE TABLES): " << elapsed_secs7 << endl;
+  //cout << "Runtime (PRINT CATALOG): " << elapsed_secs8 << endl;
 
   return 0;
 }

@@ -16,7 +16,7 @@ private:
 
 public:
     void Swap (ComplexSwapify& withMe);
-    ComplexSwapify (const Type castFromMe);
+    ComplexSwapify (const Type &castFromMe);
     void CopyFrom(ComplexSwapify& FromMe);
     operator Type();
     Type& GetData() { return data; };
