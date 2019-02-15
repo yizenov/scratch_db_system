@@ -19,7 +19,7 @@ Catalog::Catalog(string &_fileName) {
   } else {
     if (sqlite3_open(_fileName.c_str(), &catalog_db) == SQLITE_OK) {
       // sqlite3_exec(catalog_db,"PRAGMA
-      // schema.page_size=16384",NULL,NULL,NULL);
+      // schema.page_size=16384",NULL,NULL,NULL); // TODO: try to use PRAGMA
       connection_status = true;
       UploadSchemas();
       cout << "database is connected." << endl << endl;
@@ -31,6 +31,7 @@ Catalog::Catalog(string &_fileName) {
 }
 
 Catalog::~Catalog() {
+  this->Save();
   sqlite3_close(catalog_db);
   connection_status = false;
   schema_data_->Clear();
@@ -50,27 +51,54 @@ bool Catalog::Save() {
   sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
   set<string> existing_tables;
 
-  sqlite3_stmt *inner_stmt_one;
+  string query_one = "SELECT " + table_attr_col2 +
+                     " FROM " DB_TABLE_ATTR_LIST " WHERE " + table_attr_col1 +
+                     " = ?1;";
+  sqlite3_stmt *stmt_one;
+  sqlite3_prepare_v2(catalog_db, query_one.c_str(), -1, &stmt_one, nullptr);
+
   string inner_query_one =
       "DELETE FROM " DB_TABLE_ATTR_LIST " WHERE " + table_attr_col1 + " = ?1;";
-   sqlite3_prepare_v2(catalog_db, inner_query_one.c_str(), -1, &inner_stmt_one, nullptr);
+  sqlite3_stmt *inner_stmt_one;
+  sqlite3_prepare_v2(catalog_db, inner_query_one.c_str(), -1, &inner_stmt_one,
+                     nullptr);
 
-  sqlite3_stmt *inner_stmt_two;
   string inner_query_two =
       "DELETE FROM " DB_TABLE_LIST " WHERE " + table_col1 + " = ?1;";
+  sqlite3_stmt *inner_stmt_two;
   sqlite3_prepare_v2(catalog_db, inner_query_two.c_str(), -1, &inner_stmt_two,
                      nullptr);
 
+  string inner_query_three =
+      "DELETE FROM " DB_ATTRIBUTE_LIST " WHERE " + attr_col1 + " = ?1;";
+  sqlite3_stmt *inner_stmt_three;
+  sqlite3_prepare_v2(catalog_db, inner_query_three.c_str(), -1,
+                     &inner_stmt_three, nullptr);
+
   while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+
     string table_name =
         string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)));
     KeyString table_data(table_name);
-    Schema *table_schema = &schema_data_->CurrentData().GetData();
-    if (schema_data_->IsThere(table_data) == 0) { // ||
-      // table_schema.GetSchemaStatus()) { // if row is not present in memory or
-      // has been updated
+    //Schema *table_schema = &schema_data_->CurrentData().GetData();
+    // if row is not present in memory or has been updated
+    if (schema_data_->IsThere(table_data) == 0) {
+      // || table_schema.GetSchemaStatus()) {
 
-      sqlite3_bind_text(inner_stmt_one, 1, table_name.c_str(), -1, SQLITE_STATIC);
+      // collecting attribute names
+      vector<string> attributes;
+      sqlite3_bind_text(stmt_one, 1, table_name.c_str(), -1, NULL);
+      while (sqlite3_step(stmt_one) == SQLITE_ROW) {
+        string attr_name = string(
+            reinterpret_cast<const char *>(sqlite3_column_text(stmt_one, 0)));
+        attributes.push_back(attr_name);
+      }
+      sqlite3_clear_bindings(stmt_one);
+      sqlite3_reset(stmt_one);
+
+      // deleting data from table_attribute
+      sqlite3_bind_text(inner_stmt_one, 1, table_name.c_str(), -1,
+                        SQLITE_STATIC);
       rc = sqlite3_step(inner_stmt_one);
       if (isItError(rc)) {
         cout << sqlite3_errmsg(catalog_db) << endl;
@@ -79,11 +107,27 @@ bool Catalog::Save() {
         sqlite3_finalize(inner_stmt_one);
         return false;
       }
-      //sqlite3_finalize(inner_stmt_one);
-        sqlite3_clear_bindings(inner_stmt_one);
-        sqlite3_reset(inner_stmt_one);
+      sqlite3_clear_bindings(inner_stmt_one);
+      sqlite3_reset(inner_stmt_one);
 
-      sqlite3_bind_text(inner_stmt_two, 1, table_name.c_str(), -1, SQLITE_STATIC);
+      // deleting data from attribute
+      for (auto att : attributes) {
+        sqlite3_bind_text(inner_stmt_three, 1, att.c_str(), -1, SQLITE_STATIC);
+        rc = sqlite3_step(inner_stmt_three);
+        if (isItError(rc)) {
+          cout << sqlite3_errmsg(catalog_db) << endl;
+          cout << "attribute: " << att << " wasn't deleted in the database."
+               << endl;
+          sqlite3_finalize(inner_stmt_three);
+          return false;
+        }
+        sqlite3_clear_bindings(inner_stmt_three);
+        sqlite3_reset(inner_stmt_three);
+      }
+
+      // deleting data from table
+      sqlite3_bind_text(inner_stmt_two, 1, table_name.c_str(), -1,
+                        SQLITE_STATIC);
       rc = sqlite3_step(inner_stmt_two);
       if (isItError(rc)) {
         cout << sqlite3_errmsg(catalog_db) << endl;
@@ -92,10 +136,8 @@ bool Catalog::Save() {
         sqlite3_finalize(inner_stmt_two);
         return false;
       }
-      //sqlite3_finalize(inner_stmt_two);
-        sqlite3_clear_bindings(inner_stmt_two);
-        sqlite3_reset(inner_stmt_two);
-
+      sqlite3_clear_bindings(inner_stmt_two);
+      sqlite3_reset(inner_stmt_two);
     } else {
       // existing tables in database
       existing_tables.insert(table_name);
@@ -107,8 +149,9 @@ bool Catalog::Save() {
 
   sqlite3_exec(catalog_db, "BEGIN TRANSACTION", nullptr, nullptr, &error_msg);
 
-  string attr_query = "INSERT INTO " DB_ATTRIBUTE_LIST " (" + attr_col1 + "," +
-                      attr_col2 + "," + attr_col3 + ") VALUES (?1,?2,?3);";
+  string attr_query = "INSERT INTO " DB_ATTRIBUTE_LIST " (" +
+                      attr_col1 + "," + attr_col2 + "," + attr_col3 +
+                      ") VALUES (?1,?2,?3);";
   sqlite3_stmt *stmt_attr;
   sqlite3_prepare_v2(catalog_db, attr_query.c_str(), -1, &stmt_attr, nullptr);
 
@@ -119,8 +162,9 @@ bool Catalog::Save() {
   sqlite3_prepare_v2(catalog_db, table_attr_query.c_str(), -1, &stmt_table_attr,
                      nullptr);
 
-  string table_query = "INSERT INTO " DB_TABLE_LIST " (" + table_col1 + "," +
-                       table_col2 + "," + table_col3 + ") VALUES (?1,?2,?3);";
+  string table_query = "INSERT INTO " DB_TABLE_LIST " (" +
+                       table_col1 + "," + table_col2 + "," + table_col3 +
+                       ") VALUES (?1,?2,?3);";
   sqlite3_stmt *stmt_table;
   sqlite3_prepare_v2(catalog_db, table_query.c_str(), -1, &stmt_table, nullptr);
 
@@ -148,7 +192,6 @@ bool Catalog::Save() {
       sqlite3_finalize(stmt_table);
       return false;
     }
-    // sqlite3_finalize(stmt_table);
     sqlite3_clear_bindings(stmt_table);
     sqlite3_reset(stmt_table);
 
@@ -173,12 +216,13 @@ bool Catalog::Save() {
         sqlite3_finalize(stmt_attr);
         return false;
       }
-      // sqlite3_finalize(stmt_attr);
       sqlite3_clear_bindings(stmt_attr);
       sqlite3_reset(stmt_attr);
 
-      sqlite3_bind_text(stmt_table_attr, 1, table_name.c_str(), -1, SQLITE_STATIC);
-      sqlite3_bind_text(stmt_table_attr, 2, att.name.c_str(), -1, SQLITE_STATIC);
+      sqlite3_bind_text(stmt_table_attr, 1, table_name.c_str(), -1,
+                        SQLITE_STATIC);
+      sqlite3_bind_text(stmt_table_attr, 2, att.name.c_str(), -1,
+                        SQLITE_STATIC);
       rc = sqlite3_step(stmt_table_attr);
       if (isItError(rc)) {
         cout << sqlite3_errmsg(catalog_db) << endl;
@@ -187,7 +231,6 @@ bool Catalog::Save() {
         sqlite3_finalize(stmt_table_attr);
         return false;
       }
-      // sqlite3_finalize(stmt_table_attr);
       sqlite3_clear_bindings(stmt_table_attr);
       sqlite3_reset(stmt_table_attr);
     }
@@ -409,12 +452,13 @@ void Catalog::UploadSchemas() {
           distinct_values.push_back(dist_no);
           break;
         }
-
-        // sqlite3_finalize(inner_stmt_two);
+        sqlite3_clear_bindings(inner_stmt_two);
+        sqlite3_reset(inner_stmt_two);
       }
 
       Schema table_schema(attributes, attr_types, distinct_values);
-      // sqlite3_finalize(inner_stmt_one);
+      sqlite3_clear_bindings(inner_stmt_one);
+      sqlite3_reset(inner_stmt_one);
 
       auto tuple_no = (unsigned int)sqlite3_column_int(stmt, 1);
       string table_path =

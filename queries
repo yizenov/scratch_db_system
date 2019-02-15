@@ -5,21 +5,24 @@ create table db_table_attr(t_name STRING, a_name STRING); // REFERENCES
 
 
 CREATE TABLE db_tables (
-    name VARCHAR  NOT NULL   PRIMARY KEY,
+    name VARCHAR PRIMARY KEY ON CONFLICT REPLACE  NOT NULL,
     tuple_number integer  NOT NULL,
     location VARCHAR
 );
 
 CREATE TABLE db_attributes (
-    name VARCHAR  NOT NULL   PRIMARY KEY,
+    name VARCHAR PRIMARY KEY ON CONFLICT REPLACE  NOT NULL,
     type VARCHAR,
     dist_values integer  NOT NULL
 );
 
 CREATE TABLE db_table_attr (
-    t_name VARCHAR  NOT NULL,
-    a_name VARCHAR  NOT NULL,
-    FOREIGN KEY (t_name) REFERENCES db_tables(name),
-    FOREIGN KEY (a_name) REFERENCES db_attributes(name),
-    UNIQUE (t_name, a_name) ON CONFLICT IGNORE
+    t_name VARCHAR NOT NULL,
+    a_name VARCHAR NOT NULL,
+    FOREIGN KEY (t_name)
+    REFERENCES db_tables (name),
+    FOREIGN KEY (a_name)
+    REFERENCES db_attributes (name),
+    UNIQUE (t_name, a_name)
+    ON CONFLICT IGNORE
 );
