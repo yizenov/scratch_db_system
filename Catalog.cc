@@ -43,66 +43,69 @@ bool Catalog::Save() {
     cout << "database is not connected." << endl;
     return false;
   }
-    sqlite3_exec(catalog_db, "BEGIN TRANSACTION", NULL, NULL, &error_msg);
+  sqlite3_exec(catalog_db, "BEGIN TRANSACTION", nullptr, nullptr, &error_msg);
 
-    // dropping in-memory deleted tables
-    query = "SELECT " + table_col1 + " FROM " DB_TABLE_LIST ";";
-    sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
-    set<string> existing_tables;
+  // dropping in-memory deleted tables
+  query = "SELECT " + table_col1 + " FROM " DB_TABLE_LIST ";";
+  sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
+  set<string> existing_tables;
 
-    sqlite3_stmt *inner_stmt_one;
-    string inner_query_one =
-        "DELETE FROM " DB_TABLE_ATTR_LIST " WHERE " + table_attr_col1 + " = ?1;";
-    //sqlite3_prepare_v2(catalog_db, inner_query_one.c_str(), -1, &inner_stmt_one, nullptr);
+  sqlite3_stmt *inner_stmt_one;
+  string inner_query_one =
+      "DELETE FROM " DB_TABLE_ATTR_LIST " WHERE " + table_attr_col1 + " = ?1;";
+   sqlite3_prepare_v2(catalog_db, inner_query_one.c_str(), -1, &inner_stmt_one, nullptr);
 
-    sqlite3_stmt *inner_stmt_two;
-    string inner_query_two =
-        "DELETE FROM " DB_TABLE_LIST " WHERE " + table_col1 + " = ?1;";
-    sqlite3_prepare_v2(catalog_db, inner_query_two.c_str(), -1,
-    &inner_stmt_two, nullptr);
+  sqlite3_stmt *inner_stmt_two;
+  string inner_query_two =
+      "DELETE FROM " DB_TABLE_LIST " WHERE " + table_col1 + " = ?1;";
+  sqlite3_prepare_v2(catalog_db, inner_query_two.c_str(), -1, &inner_stmt_two,
+                     nullptr);
 
-    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-      string table_name =
-          string(reinterpret_cast<const char *>(sqlite3_column_text(stmt,
-          0)));
-      KeyString table_data(table_name);
-      Schema table_schema = schema_data_->CurrentData().GetData();
-      if (schema_data_->IsThere(table_data) == 0) { // ||
-        // table_schema.GetSchemaStatus()) { // if row is not present in memory or
-        // has been updated
+  while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+    string table_name =
+        string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)));
+    KeyString table_data(table_name);
+    Schema *table_schema = &schema_data_->CurrentData().GetData();
+    if (schema_data_->IsThere(table_data) == 0) { // ||
+      // table_schema.GetSchemaStatus()) { // if row is not present in memory or
+      // has been updated
 
-          sqlite3_prepare_v2(catalog_db, inner_query_one.c_str(), -1, &inner_stmt_one, nullptr);
-        sqlite3_bind_text(inner_stmt_one, 1, table_name.c_str(), -1, nullptr);
-        rc = sqlite3_step(inner_stmt_one);
-        if (isItError(rc)) {
-          cout << sqlite3_errmsg(catalog_db) << endl;
-          cout << "pairs where " << table_attr_col1 << " = " << table_name
-               << ") weren't deleted in the database." << endl;
-          sqlite3_finalize(inner_stmt_one);
-          return false;
-        }
+      sqlite3_bind_text(inner_stmt_one, 1, table_name.c_str(), -1, SQLITE_STATIC);
+      rc = sqlite3_step(inner_stmt_one);
+      if (isItError(rc)) {
+        cout << sqlite3_errmsg(catalog_db) << endl;
+        cout << "pairs where " << table_attr_col1 << " = " << table_name
+             << ") weren't deleted in the database." << endl;
         sqlite3_finalize(inner_stmt_one);
-
-        sqlite3_bind_text(inner_stmt_two, 1, table_name.c_str(), -1, nullptr);
-        rc = sqlite3_step(inner_stmt_two);
-        if (isItError(rc) != SQLITE_DONE) {
-          cout << sqlite3_errmsg(catalog_db) << endl;
-          cout << "table: " << table_name << " wasn't deleted in the database." << endl;
-          sqlite3_finalize(inner_stmt_two);
-          return false;
-        }
-        sqlite3_finalize(inner_stmt_two);
-
-      } else {
-        // existing tables in database
-        existing_tables.insert(table_name);
+        return false;
       }
+      //sqlite3_finalize(inner_stmt_one);
+        sqlite3_clear_bindings(inner_stmt_one);
+        sqlite3_reset(inner_stmt_one);
+
+      sqlite3_bind_text(inner_stmt_two, 1, table_name.c_str(), -1, SQLITE_STATIC);
+      rc = sqlite3_step(inner_stmt_two);
+      if (isItError(rc)) {
+        cout << sqlite3_errmsg(catalog_db) << endl;
+        cout << "table: " << table_name << " wasn't deleted in the database."
+             << endl;
+        sqlite3_finalize(inner_stmt_two);
+        return false;
+      }
+      //sqlite3_finalize(inner_stmt_two);
+        sqlite3_clear_bindings(inner_stmt_two);
+        sqlite3_reset(inner_stmt_two);
+
+    } else {
+      // existing tables in database
+      existing_tables.insert(table_name);
     }
-    sqlite3_finalize(stmt);
+  }
+  sqlite3_finalize(stmt);
 
-    sqlite3_exec(catalog_db, "END TRANSACTION", NULL, NULL, &error_msg);
+  sqlite3_exec(catalog_db, "END TRANSACTION", nullptr, nullptr, &error_msg);
 
-    sqlite3_exec(catalog_db, "BEGIN TRANSACTION", NULL, NULL, &error_msg);
+  sqlite3_exec(catalog_db, "BEGIN TRANSACTION", nullptr, nullptr, &error_msg);
 
   string attr_query = "INSERT INTO " DB_ATTRIBUTE_LIST " (" + attr_col1 + "," +
                       attr_col2 + "," + attr_col3 + ") VALUES (?1,?2,?3);";
@@ -113,19 +116,19 @@ bool Catalog::Save() {
                             table_attr_col1 + "," + table_attr_col2 +
                             ") VALUES (?1,?2);";
   sqlite3_stmt *stmt_table_attr;
-   sqlite3_prepare_v2(catalog_db, table_attr_query.c_str(), -1, &stmt_table_attr, nullptr);
+  sqlite3_prepare_v2(catalog_db, table_attr_query.c_str(), -1, &stmt_table_attr,
+                     nullptr);
 
   string table_query = "INSERT INTO " DB_TABLE_LIST " (" + table_col1 + "," +
                        table_col2 + "," + table_col3 + ") VALUES (?1,?2,?3);";
   sqlite3_stmt *stmt_table;
-   sqlite3_prepare_v2(catalog_db, table_query.c_str(), -1, &stmt_table, nullptr);
+  sqlite3_prepare_v2(catalog_db, table_query.c_str(), -1, &stmt_table, nullptr);
 
   // creating tables in the database
   schema_data_->MoveToStart();
   while (!schema_data_->AtEnd()) {
     string table_name = schema_data_->CurrentKey();
     Schema *table_schema = &schema_data_->CurrentData().GetData();
-    // Schema table_schema = schema_data_->CurrentData().GetData();
 
     auto it = existing_tables.find(table_name);
     if (it != existing_tables.end()) {
@@ -133,23 +136,22 @@ bool Catalog::Save() {
       continue;
     }
 
-          //sqlite3_prepare_v2(catalog_db, table_query.c_str(), -1, &stmt_table, nullptr);
-      sqlite3_bind_text(stmt_table, 1, table_name.c_str(), -1, SQLITE_STATIC);
-      sqlite3_bind_int(stmt_table, 2, table_schema->GetTuplesNumber());
-      sqlite3_bind_text(stmt_table, 3, table_schema->GetTablePath().c_str(), -1, SQLITE_STATIC);
-      rc = sqlite3_step(stmt_table);
-      if (isItError(rc)) {
-          cout << sqlite3_errmsg(catalog_db) << endl;
-          cout << "table: " << table_name << " wasn't inserted in the database."
-               << endl;
-          sqlite3_finalize(stmt_table);
-          return false;
-      }
-      //sqlite3_finalize(stmt_table);
-      sqlite3_clear_bindings(stmt_table);
-      sqlite3_reset(stmt_table);
+    sqlite3_bind_text(stmt_table, 1, table_name.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_int(stmt_table, 2, table_schema->GetTuplesNumber());
+    sqlite3_bind_text(stmt_table, 3, table_schema->GetTablePath().c_str(), -1,
+                      SQLITE_STATIC);
+    rc = sqlite3_step(stmt_table);
+    if (isItError(rc)) {
+      cout << sqlite3_errmsg(catalog_db) << endl;
+      cout << "table: " << table_name << " wasn't inserted in the database."
+           << endl;
+      sqlite3_finalize(stmt_table);
+      return false;
+    }
+    // sqlite3_finalize(stmt_table);
+    sqlite3_clear_bindings(stmt_table);
+    sqlite3_reset(stmt_table);
 
-    // auto vec = table_schema.GetAtts();
     for (Attribute &att : table_schema->GetAtts()) {
 
       string attr_type = "Unknown";
@@ -160,7 +162,6 @@ bool Catalog::Save() {
       else if (att.type == String)
         attr_type = "String"; //"STRING";
 
-      //sqlite3_prepare_v2(catalog_db, attr_query.c_str(), -1, &stmt_attr, nullptr);
       sqlite3_bind_text(stmt_attr, 1, att.name.c_str(), -1, SQLITE_STATIC);
       sqlite3_bind_text(stmt_attr, 2, attr_type.c_str(), -1, SQLITE_STATIC);
       sqlite3_bind_int(stmt_attr, 3, att.noDistinct);
@@ -172,14 +173,12 @@ bool Catalog::Save() {
         sqlite3_finalize(stmt_attr);
         return false;
       }
-      //sqlite3_finalize(stmt_attr);
-        sqlite3_clear_bindings(stmt_attr);
-        sqlite3_reset(stmt_attr);
+      // sqlite3_finalize(stmt_attr);
+      sqlite3_clear_bindings(stmt_attr);
+      sqlite3_reset(stmt_attr);
 
-//      sqlite3_prepare_v2(catalog_db, table_attr_query.c_str(), -1,
-//                         &stmt_table_attr, nullptr);
-      sqlite3_bind_text(stmt_table_attr, 1, table_name.c_str(), -1, nullptr);
-      sqlite3_bind_text(stmt_table_attr, 2, att.name.c_str(), -1, nullptr);
+      sqlite3_bind_text(stmt_table_attr, 1, table_name.c_str(), -1, SQLITE_STATIC);
+      sqlite3_bind_text(stmt_table_attr, 2, att.name.c_str(), -1, SQLITE_STATIC);
       rc = sqlite3_step(stmt_table_attr);
       if (isItError(rc)) {
         cout << sqlite3_errmsg(catalog_db) << endl;
@@ -188,9 +187,9 @@ bool Catalog::Save() {
         sqlite3_finalize(stmt_table_attr);
         return false;
       }
-      //sqlite3_finalize(stmt_table_attr);
-        sqlite3_clear_bindings(stmt_table_attr);
-        sqlite3_reset(stmt_table_attr);
+      // sqlite3_finalize(stmt_table_attr);
+      sqlite3_clear_bindings(stmt_table_attr);
+      sqlite3_reset(stmt_table_attr);
     }
 
     // TODO: roll-back if failure happens
@@ -198,7 +197,7 @@ bool Catalog::Save() {
     schema_data_->Advance();
   }
 
-    sqlite3_exec(catalog_db, "END TRANSACTION", NULL, NULL, &error_msg);
+  sqlite3_exec(catalog_db, "END TRANSACTION", nullptr, nullptr, &error_msg);
 
   // TODO: roll-back if failure happens
   // TODO: do updates and changes (attr,path,etc. delete/update/add)
@@ -210,17 +209,17 @@ bool Catalog::GetNoTuples(string &_table, unsigned int &_noTuples) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 0)
     return false;
-  auto schema_ = schema_data_->Find(table_name);
-  _noTuples = schema_.GetData().GetTuplesNumber();
+  ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
+  _noTuples = schema_->GetData().GetTuplesNumber();
   return true;
 }
 
 void Catalog::SetNoTuples(string &_table, unsigned int &_noTuples) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 1) {
-    auto schema_ = schema_data_->Find(table_name);
-    schema_.GetData().SetTuplesNumber(_noTuples);
-    schema_data_->Find(table_name).Swap(schema_);
+    ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
+    schema_->GetData().SetTuplesNumber(_noTuples);
+    schema_data_->Find(table_name).Swap(*schema_);
   }
 }
 
@@ -228,17 +227,17 @@ bool Catalog::GetDataFile(string &_table, string &_path) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 0)
     return false;
-  auto schema_ = schema_data_->Find(table_name);
-  _path = schema_.GetData().GetTablePath();
+  ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
+  _path = schema_->GetData().GetTablePath();
   return true;
 }
 
 void Catalog::SetDataFile(string &_table, string &_path) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 1) {
-    auto schema_ = schema_data_->Find(table_name);
-    schema_.GetData().SetTablePath(_path);
-    schema_data_->Find(table_name).Swap(schema_);
+    ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
+    schema_->GetData().SetTablePath(_path);
+    schema_data_->Find(table_name).Swap(*schema_);
   }
 }
 
@@ -247,8 +246,8 @@ bool Catalog::GetNoDistinct(string &_table, string &_attribute,
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 0)
     return false;
-  auto schema_ = schema_data_->Find(table_name);
-  int tuple_no = schema_.GetData().GetDistincts(_attribute);
+  ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
+  int tuple_no = schema_->GetData().GetDistincts(_attribute);
   if (tuple_no == -1)
     return false;
   _noDistinct = (unsigned int)tuple_no; // TODO: initial type mismatch
@@ -258,9 +257,9 @@ void Catalog::SetNoDistinct(string &_table, string &_attribute,
                             unsigned int &_noDistinct) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 1) {
-    auto schema_ = schema_data_->Find(table_name);
-    schema_.GetData().SetDistincts(_attribute, _noDistinct);
-    schema_data_->Find(table_name).Swap(schema_);
+    ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
+    schema_->GetData().SetDistincts(_attribute, _noDistinct);
+    schema_data_->Find(table_name).Swap(*schema_);
   }
 }
 
@@ -269,7 +268,7 @@ bool Catalog::GetAttributeType(string &_table, string &_attribute,
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 0)
     return false;
-  auto schema_ = schema_data_->Find(table_name);
+  ComplexSwapify<Schema> schema_ = schema_data_->Find(table_name);
   int attr_idx = schema_.GetData().Index(_attribute);
   if (attr_idx == -1)
     return false;
@@ -299,9 +298,9 @@ bool Catalog::GetAttributes(string &_table, vector<string> &_attributes) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 0)
     return false;
-  auto schema_ = schema_data_->Find(table_name);
-  auto attrs = schema_.GetData().GetAtts();
-  for (auto it : attrs)
+  ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
+  auto *attrs = &schema_->GetData().GetAtts();
+  for (auto it : *attrs)
     _attributes.push_back(it.name);
   return true;
 }
@@ -323,10 +322,6 @@ bool Catalog::CreateTable(string &_table, vector<string> &_attributes,
   vector<unsigned int> distinct_values(_attributes.size(), 0);
   Schema table_schema(_attributes, _attributeTypes, distinct_values);
   ComplexSwapify<Schema> table_info(table_schema);
-  //  unsigned int default_value = 0;
-  //  string default_path = "NO PATH";
-  //  table_info.GetData().SetTuplesNumber(default_value);
-  //  table_info.GetData().SetTablePath(default_path);
   schema_data_->Insert(table_data, table_info);
 
   table_data = _table;
