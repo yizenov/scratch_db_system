@@ -9,6 +9,9 @@ catalog.sqlite
 catalog.sqlite-journal
 *.o
 *.out
+QueryLexer.c
+QueryParser.c
+QueryParser.h
 
 # User-specific stuff
 .idea/**/workspace.xml

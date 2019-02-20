@@ -14,5 +14,16 @@ add_executable(db_systems
         Config.h
         Schema.h Schema.cc
         Catalog.h Catalog.cc
+        QueryLexer.l
+        QueryParser.y
+        ParseTree.h
+        QueryCompiler.h QueryCompiler.cc
+        QueryOptimizer.h QueryOptimizer.cc
+        Record.h Record.cc
+        RelOp.h RelOp.cc
+        Function.h Function.cc
+        File.h File.cc
+        DBFile.h DBFile.cc
+        Comparison.h Comparison.cc
         main.cc)
 target_link_libraries(db_systems LINK_PUBLIC sqlite3)
