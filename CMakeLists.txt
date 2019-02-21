@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.12)
 project(db_systems)
 
+# set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(db_systems
-        Swap.h
+set(SOURCE_FILES Swap.h
         Swapify.h Swapify.cc
         ComplexSwapify.h ComplexSwapify.cc
         Keyify.h Keyify.cc
@@ -14,8 +14,6 @@ add_executable(db_systems
         Config.h
         Schema.h Schema.cc
         Catalog.h Catalog.cc
-        QueryLexer.l
-        QueryParser.y
         ParseTree.h
         QueryCompiler.h QueryCompiler.cc
         QueryOptimizer.h QueryOptimizer.cc
@@ -26,4 +24,11 @@ add_executable(db_systems
         DBFile.h DBFile.cc
         Comparison.h Comparison.cc
         main.cc)
+
+add_executable(db_systems
+        QueryLexer.o
+        QueryParser.o
+        ${SOURCE_FILES}
+       )
+
 target_link_libraries(db_systems LINK_PUBLIC sqlite3)

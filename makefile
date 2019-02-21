@@ -73,6 +73,7 @@ QueryLexer.o: QueryLexer.l
 clean: 
 	rm -f *.o
 	rm -f *.out
-	rm -f QueryLexer.c
-	rm -f QueryParser.c
-	rm -f QueryParser.h
+
+#rm -f QueryLexer.c
+#rm -f QueryParser.c
+#rm -f QueryParser.h

@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <cstring>
 #include <cstdlib>
@@ -142,8 +143,8 @@ int File :: Open (int fileLen, char* fName) {
 	// read in the buffer if needed
 	if (fileLen != 0) {
 		// read in the first few bits, which is the number of pages
-		//--lseek (fileDescriptor, 0, SEEK_SET);
-		//--read (fileDescriptor, &curLength, sizeof (off_t));
+		lseek (fileDescriptor, 0, SEEK_SET);
+		read (fileDescriptor, &curLength, sizeof (off_t));
 	}
 	else curLength = 0;
 
@@ -152,11 +153,11 @@ int File :: Open (int fileLen, char* fName) {
 
 int File :: Close () {
 	// write out the current length in pages
-	//--lseek (fileDescriptor, 0, SEEK_SET);
-	//--write (fileDescriptor, &curLength, sizeof (off_t));
+	lseek (fileDescriptor, 0, SEEK_SET);
+	write (fileDescriptor, &curLength, sizeof (off_t));
 
 	// close the file
-	//--close (fileDescriptor);
+	close (fileDescriptor);
 
 	// and return the size
 	return curLength;
@@ -175,8 +176,8 @@ int File :: GetPage (Page& putItHere, off_t whichPage) {
 	// read in the specified page
 	char* bits = new char[PAGE_SIZE];
 	
-	//--lseek (fileDescriptor, PAGE_SIZE * whichPage, SEEK_SET);
-	//--read (fileDescriptor, bits, PAGE_SIZE);
+	lseek (fileDescriptor, PAGE_SIZE * whichPage, SEEK_SET);
+	read (fileDescriptor, bits, PAGE_SIZE);
 	putItHere.FromBinary(bits);
 
 	delete [] bits;
@@ -186,16 +187,16 @@ void File :: AddPage (Page& addMe, off_t whichPage) {
 	// do the zeroing
 	for (off_t i = curLength; i < whichPage; i++) {
 		char zero[PAGE_SIZE]; bzero(zero, PAGE_SIZE);
-		//--lseek (fileDescriptor, PAGE_SIZE * (i+1), SEEK_SET);
-		//--write (fileDescriptor, &zero, PAGE_SIZE);
+		lseek (fileDescriptor, PAGE_SIZE * (i+1), SEEK_SET);
+		write (fileDescriptor, &zero, PAGE_SIZE);
 	}
 
 	// now write the page
 	char* bits = new char[PAGE_SIZE];
 
 	addMe.ToBinary(bits);
-	//--lseek (fileDescriptor, PAGE_SIZE * (whichPage+1), SEEK_SET);
-	//--write (fileDescriptor, bits, PAGE_SIZE);
+	lseek (fileDescriptor, PAGE_SIZE * (whichPage+1), SEEK_SET);
+	write (fileDescriptor, bits, PAGE_SIZE);
 
 	delete [] bits;
 }

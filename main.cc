@@ -16,8 +16,8 @@ extern struct NameList* groupingAtts; // grouping attributes
 extern struct NameList* attsToSelect; // the attributes in SELECT
 extern int distinctAtts; // 1 if there is a DISTINCT in a non-aggregate query
 
-//extern "C" int yyparse();
-//extern "C" int yylex_destroy();
+extern "C" int yyparse();
+extern "C" int yylex_destroy();
 
 // PHASE #2 Original --------------------------------------------
 int main () {
@@ -37,16 +37,16 @@ int main () {
     // the query parser is accessed directly through yyparse
     // this populates the extern data structures
     int parse = -1;
-//    if (yyparse () == 0) {
-//        cout << "OK!" << endl;
-//        parse = 0;
-//    }
-//    else {
-//        cout << "Error: Query is not correct!" << endl;
-//        parse = -1;
-//    }
+    if (yyparse () == 0) {
+        cout << "OK!" << endl;
+        parse = 0;
+    }
+    else {
+        cout << "Error: Query is not correct!" << endl;
+        parse = -1;
+    }
 
-//    yylex_destroy();
+    yylex_destroy();
 
     if (parse != 0) return -1;
 
@@ -54,8 +54,8 @@ int main () {
     // we are ready to invoke the query compiler with the given query
     // the result is the execution tree built from the parse tree and optimized
     QueryExecutionTree queryTree;
-//    compiler.Compile(tables, attsToSelect, finalFunction, predicate,
-//                     groupingAtts, distinctAtts, queryTree);
+    compiler.Compile(tables, attsToSelect, finalFunction, predicate,
+                     groupingAtts, distinctAtts, queryTree);
 
     cout << queryTree << endl;
 
