@@ -62,18 +62,17 @@ QueryCompiler.o: Schema.cc Record.cc Comparison.cc RelOp.cc QueryOptimizer.cc Qu
 	$(CC) -c QueryCompiler.cc
 
 QueryParser.o: QueryParser.y
+	yacc --defines=QueryParser.h -o QueryParser.c QueryParser.y
+	sed $(tag) QueryParser.c -e "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/"
 	g++ -c QueryParser.c
-# yacc --defines=QueryParser.h -o QueryParser.c QueryParser.y
-# sed $(tag) QueryParser.c -e "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/"
 
 QueryLexer.o: QueryLexer.l
+	lex -o QueryLexer.c QueryLexer.l
 	gcc -c QueryLexer.c
-# lex -o QueryLexer.c QueryLexer.l
 
 clean: 
 	rm -f *.o
 	rm -f *.out
-
-#rm -f QueryLexer.c
-#rm -f QueryParser.c
-#rm -f QueryParser.h
+	rm -f QueryLexer.c
+	rm -f QueryParser.c
+	rm -f QueryParser.h

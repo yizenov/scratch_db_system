@@ -208,25 +208,33 @@ int main (int argc, char* argv[]) {
 //    if (user_choice == 1) {
 //
 //      string table_name;
-//      cout << "Enter table name: ";
-//      cin >> table_name;
+//      unsigned int tuple_nbr;
+//      cout << "Enter table name and number of tuples: ";
+//      cin >> table_name >> tuple_nbr;
 //
 //      vector<string> attributes, types;
+//      vector<unsigned int> distincts;
 //      string attribute, type;
 //      int attr_nbr;
+//      unsigned int distinc_nbr;
 //
 //      cout << "Enter number of attributes: ";
 //      cin >> attr_nbr;
 //
-//      cout << "Enter attribute name and type:" << endl;
+//      cout << "Enter attribute name, type and distincts:" << endl;
 //      for (int i = 0; i < attr_nbr; i++) {
 //        cout << i + 1 << ": ";
-//        cin >> attribute >> type;
+//        cin >> attribute >> type >> distinc_nbr;
 //        attributes.push_back(attribute);
 //        types.push_back(type);
+//        distincts.push_back(distinc_nbr);
 //      }
 //
 //      cat.CreateTable(table_name, attributes, types);
+//      cat.SetNoTuples(table_name, tuple_nbr);
+//
+//      for (auto i = 0; i < attributes.size(); i++)
+//        cat.SetNoDistinct(table_name, attributes[i], distincts[i]);
 //
 //    } else if (user_choice == 2) {
 //      string table_name;
