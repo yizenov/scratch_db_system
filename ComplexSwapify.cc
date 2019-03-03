@@ -1,11 +1,6 @@
-#ifndef DB_SYSTEMS_COMPLEXSWAPIFY_CC_
-#define DB_SYSTEMS_COMPLEXSWAPIFY_CC_
-
-//
-// Created by yizenov on 2/10/19.
-//
-
 #include "ComplexSwapify.h"
+
+using namespace std;
 
 
 template <class Type>
@@ -49,5 +44,3 @@ operator<<(ostream& output, const ComplexSwapify<Type>& _s) {
 
     return output;
 }
-
-#endif //DB_SYSTEMS_COMPLEXSWAPIFY_CC_

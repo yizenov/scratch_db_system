@@ -1,7 +1,7 @@
-#ifndef _INEFFICIENT_MAP_C
-#define _INEFFICIENT_MAP_C
-
 #include "InefficientMap.h"
+#include "Keyify.cc"
+
+using namespace std;
 
 template <class Key, class Data> void
 InefficientMap <Key, Data> :: SuckUp (InefficientMap &suckMe) {
@@ -177,5 +177,3 @@ template <class Key, class Data> ostream& operator<<(ostream& output,
 
 	return output;
 }
-
-#endif

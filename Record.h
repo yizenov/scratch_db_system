@@ -5,8 +5,6 @@
 #include <iostream>
 #include "Schema.h"
 
-using namespace std;
-
 
 /* Record data structure. Data are stored in bits.
  * The layout of bits is as follows:

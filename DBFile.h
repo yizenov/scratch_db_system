@@ -1,14 +1,11 @@
-#ifndef DBFILE_H
-#define DBFILE_H
+#ifndef _DBFILE_H
+#define _DBFILE_H
 
 #include <string>
 
-#include "Config.h"
 #include "Record.h"
 #include "Schema.h"
 #include "File.h"
-
-using namespace std;
 
 
 class DBFile {
@@ -33,4 +30,4 @@ public:
 	int GetNext (Record& _fetchMe);
 };
 
-#endif //DBFILE_H
+#endif //_DBFILE_H

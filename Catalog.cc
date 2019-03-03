@@ -1,5 +1,8 @@
-
 #include "Catalog.h"
+#include "TwoWayList.cc"
+#include "InefficientMap.cc"
+
+using namespace std;
 
 bool isItError(int rc) {
   // only OK, ROW, DONE are non-error result codes
@@ -172,7 +175,7 @@ bool Catalog::Save() {
   schema_data_->MoveToStart();
   while (!schema_data_->AtEnd()) {
     string table_name = schema_data_->CurrentKey();
-    Schema *table_schema = &schema_data_->CurrentData().GetData();
+    Schema *table_schema = &schema_data_->CurrentData();
 
     auto it = existing_tables.find(table_name);
     if (it != existing_tables.end()) {
@@ -252,16 +255,16 @@ bool Catalog::GetNoTuples(string &_table, unsigned int &_noTuples) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 0)
     return false;
-  ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
-  _noTuples = schema_->GetData().GetTuplesNumber();
+  Schema *schema_ = &schema_data_->Find(table_name);
+  _noTuples = schema_->GetTuplesNumber();
   return true;
 }
 
 void Catalog::SetNoTuples(string &_table, unsigned int &_noTuples) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 1) {
-    ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
-    schema_->GetData().SetTuplesNumber(_noTuples);
+    Schema *schema_ = &schema_data_->Find(table_name);
+    schema_->SetTuplesNumber(_noTuples);
     schema_data_->Find(table_name).Swap(*schema_);
   }
 }
@@ -270,16 +273,16 @@ bool Catalog::GetDataFile(string &_table, string &_path) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 0)
     return false;
-  ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
-  _path = schema_->GetData().GetTablePath();
+  Schema *schema_ = &schema_data_->Find(table_name);
+  _path = schema_->GetTablePath();
   return true;
 }
 
 void Catalog::SetDataFile(string &_table, string &_path) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 1) {
-    ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
-    schema_->GetData().SetTablePath(_path);
+    Schema *schema_ = &schema_data_->Find(table_name);
+    schema_->SetTablePath(_path);
     schema_data_->Find(table_name).Swap(*schema_);
   }
 }
@@ -289,8 +292,8 @@ bool Catalog::GetNoDistinct(string &_table, string &_attribute,
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 0)
     return false;
-  ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
-  int tuple_no = schema_->GetData().GetDistincts(_attribute);
+  Schema *schema_ = &schema_data_->Find(table_name);
+  int tuple_no = schema_->GetDistincts(_attribute);
   if (tuple_no == -1)
     return false;
   _noDistinct = (unsigned int)tuple_no; // TODO: initial type mismatch
@@ -300,8 +303,8 @@ void Catalog::SetNoDistinct(string &_table, string &_attribute,
                             unsigned int &_noDistinct) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 1) {
-    ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
-    schema_->GetData().SetDistincts(_attribute, _noDistinct);
+    Schema *schema_ = &schema_data_->Find(table_name);
+    schema_->SetDistincts(_attribute, _noDistinct);
     schema_data_->Find(table_name).Swap(*schema_);
   }
 }
@@ -341,8 +344,8 @@ bool Catalog::GetAttributes(string &_table, vector<string> &_attributes) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 0)
     return false;
-  ComplexSwapify<Schema> *schema_ = &schema_data_->Find(table_name);
-  auto *attrs = &schema_->GetData().GetAtts();
+  Schema *schema_ = &schema_data_->Find(table_name);
+  auto *attrs = &schema_->GetAtts();
   for (auto it : *attrs)
     _attributes.push_back(it.name);
   return true;
@@ -364,8 +367,7 @@ bool Catalog::CreateTable(string &_table, vector<string> &_attributes,
     return false;
   vector<unsigned int> distinct_values(_attributes.size(), 0);
   Schema table_schema(_attributes, _attributeTypes, distinct_values);
-  ComplexSwapify<Schema> table_info(table_schema);
-  schema_data_->Insert(table_data, table_info);
+  schema_data_->Insert(table_data, table_schema);
 
   table_data = _table;
   return schema_data_->IsThere(table_data) != 0;
@@ -379,8 +381,7 @@ bool Catalog::DropTable(string &_table) {
   vector<string> attributes, attr_types;
   vector<unsigned int> distinct_values;
   Schema table_schema(attributes, attr_types, distinct_values);
-  ComplexSwapify<Schema> table_data(table_schema);
-  return schema_data_->Remove(table_info, table_name, table_data) != 0;
+  return schema_data_->Remove(table_info, table_name, table_schema) != 0;
 }
 
 ostream &operator<<(ostream &_os, Catalog &_c) {
@@ -464,11 +465,10 @@ void Catalog::UploadSchemas() {
       string table_path =
           string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2)));
 
-      ComplexSwapify<Schema> table_info(table_schema);
-      table_info.GetData().SetTuplesNumber(tuple_no); // TODO: use SetNoTuples
-      table_info.GetData().SetTablePath(table_path);  // TODO: use SetDataFile
+      table_schema.SetTuplesNumber(tuple_no); // TODO: use SetNoTuples
+      table_schema.SetTablePath(table_path);  // TODO: use SetDataFile
 
-      schema_data_->Insert(table_data, table_info);
+      schema_data_->Insert(table_data, table_schema);
       // SetNoTuples(table_name, tuple_no);
       // SetDataFile(table_name, table_path);
     }

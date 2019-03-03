@@ -1,5 +1,5 @@
-#ifndef _SWAP_H_
-#define _SWAP_H_
+#ifndef _SWAP_H
+#define _SWAP_H
 
 /**
 	This header contains macro definitions to streamline the swapping of data.
@@ -18,4 +18,4 @@
 /* macro to swap content of objects. NOTE: objects must have Swap function. */
 #define OBJ_SWAP(a,b) a.Swap(b);
 
-#endif //_SWAP_H_
+#endif //_SWAP_H

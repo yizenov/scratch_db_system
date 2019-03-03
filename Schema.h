@@ -7,8 +7,6 @@
 #include "Swap.h"
 #include "Config.h"
 
-using namespace std;
-
 
 /* Data structure for schema attributes:
  * name of attribute

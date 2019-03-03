@@ -8,8 +8,6 @@
 #include "ParseTree.h"
 #include "Record.h"
 
-using namespace std;
-
 
 struct Arithmetic {
 	ArithOperator myOp;

@@ -9,8 +9,6 @@
 #include "Function.h"
 #include "Comparison.h"
 
-using namespace std;
-
 
 class RelationalOp {
 protected:

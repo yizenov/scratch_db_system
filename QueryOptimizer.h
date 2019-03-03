@@ -9,8 +9,6 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
 
 // data structure used by the optimizer to compute join ordering
 struct OptimizationTree {

@@ -8,8 +8,6 @@
 #include "ParseTree.h"
 #include "Record.h"
 
-using namespace std;
-
 
 // This structure stores an individual comparison that is part of a CNF
 // Although defined as a class, its main role is grouping

@@ -1,13 +1,7 @@
-#ifndef DB_SYSTEMS_COMPLEXSWAPIFY_H
-#define DB_SYSTEMS_COMPLEXSWAPIFY_H
-
-//
-// Created by yizenov on 2/10/19.
-//
+#ifndef _COMPLEX_SWAPIFY_H
+#define _COMPLEX_SWAPIFY_H
 
 #include "Schema.h"
-
-using namespace std;
 
 template <class Type>
 class ComplexSwapify {
@@ -25,6 +19,5 @@ public:
     virtual ~ComplexSwapify ();
 };
 
-typedef ComplexSwapify<Schema> SwapSchema;
 
-#endif //DB_SYSTEMS_COMPLEXSWAPIFY_H
+#endif //_COMPLEX_SWAPIFY_H

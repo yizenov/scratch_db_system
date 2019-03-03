@@ -4,11 +4,9 @@
 #include <set>
 #include <fstream>
 
-#include "InefficientMap.cc"
-#include "TwoWayList.cc"
+#include "InefficientMap.h"
+#include "TwoWayList.h"
 #include "sqlite3.h"
-
-using namespace std;
 
 
 class Catalog {

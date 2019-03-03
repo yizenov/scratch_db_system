@@ -2,6 +2,8 @@
 
 #include "Schema.h"
 
+using namespace std;
+
 Attribute::Attribute() : name(""), type(Name), noDistinct(0) {}
 
 Attribute::Attribute(const Attribute& _other) :

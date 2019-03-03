@@ -2,10 +2,7 @@
 #define _INEFFICIENT_MAP_H
 
 #include "TwoWayList.h"
-#include "Keyify.cc"
-
-using namespace std;
-
+#include "Keyify.h"
 
 template <class Key, class Data>
 class InefficientMap {
@@ -85,6 +82,6 @@ private:
 	TwoWayList <Node> container;
 };
 
-typedef InefficientMap<KeyString, SwapSchema> SchemaMap;
+typedef InefficientMap<KeyString, Schema> SchemaMap;
 
-#endif
+#endif //_INEFFICIENT_MAP_H

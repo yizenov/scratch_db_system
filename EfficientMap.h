@@ -131,4 +131,4 @@ private:
 	Header* list;
 };
 
-#endif
+#endif //_EFFICIENT_MAP_H

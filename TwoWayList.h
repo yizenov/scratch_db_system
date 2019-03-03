@@ -5,9 +5,7 @@
 // Type requires Swap
 
 #include "Swapify.h"
-#include "ComplexSwapify.cc"
-
-using namespace std;
+#include "ComplexSwapify.h"
 
 
 template <class Type>
@@ -98,6 +96,6 @@ private:
 typedef TwoWayList<SwapDouble> DoubleContainer;
 typedef TwoWayList<SwapInt> IntContainer;
 typedef TwoWayList<SwapString> StringContainer;
-typedef TwoWayList<SwapSchema> SchemaContainer;
+typedef TwoWayList<Schema> SchemaContainer;
 
 #endif

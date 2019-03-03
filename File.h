@@ -4,7 +4,8 @@
 #include <string>
 
 #include "Record.h"
-#include "TwoWayList.cc"
+#include "TwoWayList.h"
+#include "Keyify.h"
 
 using namespace std;
 

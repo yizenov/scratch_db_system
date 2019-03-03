@@ -14,8 +14,6 @@
 #include "QueryOptimizer.h"
 #include "RelOp.h"
 
-using namespace std;
-
 
 class QueryCompiler {
 private:

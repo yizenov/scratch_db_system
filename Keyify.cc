@@ -1,7 +1,6 @@
-#ifndef _KEYIFY_CC_
-#define _KEYIFY_CC_
-
 #include "Keyify.h"
+
+using namespace std;
 
 template <class Type>
 Keyify <Type> :: Keyify () {
@@ -54,5 +53,3 @@ operator<<(ostream& output, const Keyify<Type>& _s) {
 
 	return output;
 }
-
-#endif //_KEYIFY_CC_

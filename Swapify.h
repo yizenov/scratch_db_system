@@ -1,5 +1,5 @@
-#ifndef _SWAPIFY_H_
-#define _SWAPIFY_H_
+#ifndef _SWAPIFY_H
+#define _SWAPIFY_H
 
 // The following templates are used to quickly and easily create a class that
 // wraps around a simple type (such as int) and can be put into TwoWayList or
@@ -35,4 +35,4 @@ typedef Swapify<double> SwapDouble;
 typedef Swapify<int> SwapInt;
 typedef Swapify<string> SwapString;
 
-#endif //_SWAPIFY_H_
+#endif //_SWAPIFY_H
