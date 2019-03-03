@@ -13,12 +13,15 @@
 #include "ParseTree.h"
 #include "QueryOptimizer.h"
 #include "RelOp.h"
+//#include "InefficientMap.h"
+//#include "Keyify.h"
 
 
 class QueryCompiler {
 private:
 	Catalog* catalog;
 	QueryOptimizer* optimizer;
+	//InefficientMap<KeyString, Scan> scanMap;
 
 public:
 	QueryCompiler(Catalog& _catalog, QueryOptimizer& _optimizer);

@@ -5,6 +5,7 @@
 #include "Schema.h"
 #include "File.h"
 #include "DBFile.h"
+#include "Swap.h"
 
 using namespace std;
 
@@ -32,6 +33,11 @@ int DBFile::Create (char* f_path, FileType f_type) {
 }
 
 int DBFile::Open (char* f_path) {
+}
+
+void DBFile::Swap(DBFile& _other) {
+	SWAP(fileName, _other.fileName);
+	OBJ_SWAP(file, _other.file);
 }
 
 void DBFile::Load (Schema& schema, char* textFile) {

@@ -1,5 +1,6 @@
 #include "InefficientMap.h"
 #include "Keyify.cc"
+#include "RelOp.h"
 
 using namespace std;
 

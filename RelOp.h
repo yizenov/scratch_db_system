@@ -25,6 +25,8 @@ public:
 	// every operator has to implement this method
 	virtual bool GetNext(Record& _record) = 0;
 
+	void Swap(RelationalOp& _other);
+
 	/* Virtual function for polymorphic printing using operator<<.
 	 * Each operator has to implement its specific version of print.
 	 */
@@ -49,6 +51,8 @@ public:
 
 	virtual bool GetNext(Record& _record) {}
 
+	void Swap(Scan& _other);
+
 	virtual ostream& print(ostream& _os);
 };
 
@@ -71,6 +75,8 @@ public:
 	virtual ~Select();
 
 	virtual bool GetNext(Record& _record) {}
+
+	virtual void Swap(Select& _other);
 
 	virtual ostream& print(ostream& _os);
 };
@@ -100,6 +106,8 @@ public:
 
 	virtual bool GetNext(Record& _record) {}
 
+	void Swap(Project& _other);
+
 	virtual ostream& print(ostream& _os);
 };
 
@@ -126,6 +134,8 @@ public:
 
 	virtual bool GetNext(Record& _record) {}
 
+	void Swap(Join& _other);
+
 	virtual ostream& print(ostream& _os);
 };
 
@@ -142,6 +152,8 @@ public:
 	virtual ~DuplicateRemoval();
 
 	virtual bool GetNext(Record& _record) {}
+
+	void Swap(DuplicateRemoval& _other);
 
 	virtual ostream& print(ostream& _os);
 };
@@ -165,6 +177,8 @@ public:
 	virtual ~Sum();
 
 	virtual bool GetNext(Record& _record) {}
+
+	void Swap(Sum& _other);
 
 	virtual ostream& print(ostream& _os);
 };
@@ -191,6 +205,8 @@ public:
 
 	virtual bool GetNext(Record& _record) {}
 
+	void Swap(GroupBy& _other);
+
 	virtual ostream& print(ostream& _os);
 };
 
@@ -210,6 +226,8 @@ public:
 	virtual ~WriteOut();
 
 	virtual bool GetNext(Record& _record) {}
+
+	void Swap(WriteOut& _other);
 
 	virtual ostream& print(ostream& _os);
 };

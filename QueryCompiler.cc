@@ -24,6 +24,20 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	QueryExecutionTree& _queryTree) {
 
 	// create a SCAN operator for each table in the query
+	TableList* current_table = _tables;
+	while (current_table) {
+		cout << current_table->tableName << endl;
+
+		Schema schema;
+		DBFile table_file;
+		string table_name = current_table->tableName;
+
+//		catalog->GetSchema(table_name, schema);
+//		Scan table_scan(schema, table_file);
+//		scanMap.Insert(table_name, table_scan);
+
+		current_table = current_table->next;
+	}
 
 	// push-down selections: create a SELECT operator wherever necessary
 

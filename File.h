@@ -24,6 +24,8 @@ public:
 	Page();
 	virtual ~Page();
 
+	void Swap(Page& _other);
+
 	// write records to bits
 	void ToBinary(char* bits);
 
@@ -63,6 +65,8 @@ public:
 	// if length is 0, create new file; existent file is erased
 	// return 0 on success, -1 otherwise
 	int Open(int length, char* fName);
+
+	void Swap(File& _other);
 
 	// get specified page from file
 	// return 0 on success, -1 otherwise

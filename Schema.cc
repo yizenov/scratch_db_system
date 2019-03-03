@@ -66,9 +66,9 @@ Schema& Schema::operator=(const Schema& _other) {
 }
 
 void Schema::Swap(Schema& _other) {
-	atts.swap(_other.atts);
+	STL_SWAP(atts, _other.atts);
 	SWAP(tuple_no, _other.tuple_no);
-	SWAP(table_path, _other.table_path);
+	STL_SWAP(table_path, _other.table_path);
 	isChanged = true;
 }
 

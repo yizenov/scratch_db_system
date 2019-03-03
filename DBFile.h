@@ -23,6 +23,7 @@ public:
 	int Open (char* fpath);
 	int Close ();
 
+	void Swap(DBFile& _other);
 	void Load (Schema& _schema, char* textFile);
 
 	void MoveFirst ();

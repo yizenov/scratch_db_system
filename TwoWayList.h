@@ -7,7 +7,6 @@
 #include "Swapify.h"
 #include "ComplexSwapify.h"
 
-
 template <class Type>
 class TwoWayList {
 
@@ -96,6 +95,5 @@ private:
 typedef TwoWayList<SwapDouble> DoubleContainer;
 typedef TwoWayList<SwapInt> IntContainer;
 typedef TwoWayList<SwapString> StringContainer;
-typedef TwoWayList<Schema> SchemaContainer;
 
 #endif

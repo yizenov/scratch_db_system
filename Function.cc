@@ -38,6 +38,12 @@ Function :: ~Function () {
 	delete [] opList;
 }
 
+void Function :: Swap(Function& _other) {
+	SWAP(opList, _other.opList);
+	SWAP(numOps, _other.numOps);
+	SWAP(returnsInt, _other.returnsInt);
+}
+
 Type Function :: RecursivelyBuild (FuncOperator* parseTree, Schema& mySchema) {
 	// different cases; in the first case, simple, unary operation
 	if ((parseTree->right == NULL) && (parseTree->leftOperand == NULL) &&

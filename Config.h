@@ -24,7 +24,6 @@ using namespace std;
 #define DB_TABLE_LIST "db_tables"
 #define DB_TABLE_ATTR_LIST "db_table_attr"
 #define DB_ATTRIBUTE_LIST "db_attributes"
-#define TEST_FILE "/home/yizenov/CLionProjects/db_systems/test.out"
 
 /* source of comparison operand:
  * left relation in join

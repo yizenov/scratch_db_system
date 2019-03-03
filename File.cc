@@ -30,6 +30,12 @@ void Page :: EmptyItOut() {
 	numRecs = 0;
 }
 
+void Page :: Swap(Page& _other) {
+	OBJ_SWAP(myRecs, _other.myRecs);
+	SWAP(numRecs, _other.numRecs);
+	SWAP(curSizeInBytes, _other.curSizeInBytes);
+}
+
 int Page :: GetFirst(Record& firstOne) {
 	// move to the first record
 	myRecs.MoveToStart ();
@@ -149,6 +155,12 @@ int File :: Open (int fileLen, char* fName) {
 	else curLength = 0;
 
 	return 0;
+}
+
+void File::Swap(File& _other) {
+	SWAP(fileDescriptor, _other.fileDescriptor);
+	STL_SWAP(fileName, _other.fileName);
+	SWAP(curLength, _other.curLength);
 }
 
 int File :: Close () {
