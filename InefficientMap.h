@@ -85,5 +85,6 @@ private:
 
 typedef InefficientMap<KeyString, Schema> SchemaMap;
 typedef InefficientMap<KeyString, Scan> ScanMap;
+typedef InefficientMap<KeyString, Select> SelectionMap;
 
 #endif //_INEFFICIENT_MAP_H

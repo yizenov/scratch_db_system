@@ -24,6 +24,7 @@ private:
 	QueryOptimizer* optimizer;
 
 	ScanMap scanMap;
+	SelectionMap selectionMap;
 
 public:
 	QueryCompiler(Catalog& _catalog, QueryOptimizer& _optimizer);
@@ -34,5 +35,8 @@ public:
 		NameList* _groupingAtts, int& _distinctAtts,
 		QueryExecutionTree& _queryTree);
 };
+
+void CreateScans(TableList& _tables, Catalog& _catalog, ScanMap& _scanMap);
+void CreateSelects(AndList& _predicate, Catalog& _catalog, ScanMap& _scanMap, SelectionMap& selectionMap);
 
 #endif // _QUERY_COMPILER_H

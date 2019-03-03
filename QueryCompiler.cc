@@ -28,22 +28,10 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	QueryExecutionTree& _queryTree) {
 
 	// create a SCAN operator for each table in the query
-	TableList* current_table = _tables;
-	while (current_table) {
-
-		Schema schema;
-		DBFile table_file;
-		string table_name = current_table->tableName;
-
-		catalog->GetSchema(table_name, schema);
-		Scan table_scan(schema, table_file);
-		Keyify<string> table_key(table_name);
-		scanMap.Insert(table_key, table_scan);
-
-		current_table = current_table->next;
-	}
+	CreateScans(*_tables, *catalog, scanMap);
 
 	// push-down selections: create a SELECT operator wherever necessary
+    CreateSelects(*_predicate, *catalog, scanMap, selectionMap);
 
 	// call the optimizer to compute the join order
 	OptimizationTree* root;
@@ -56,4 +44,42 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	// connect everything in the query execution tree and return
 
 	// free the memory occupied by the parse tree since it is not necessary anymore
+}
+
+void CreateScans(TableList& _tables, Catalog& _catalog, ScanMap& _scanMap) {
+	TableList* current_table = &_tables;
+	while (current_table) {
+
+		Schema schema;
+		DBFile table_file;
+		string table_name = current_table->tableName;
+
+		_catalog.GetSchema(table_name, schema);
+		Scan table_scan(schema, table_file);
+		Keyify<string> table_key(table_name);
+		_scanMap.Insert(table_key, table_scan);
+
+		current_table = current_table->next;
+	}
+}
+
+void CreateSelects(AndList& _predicate, Catalog& _catalog, ScanMap& _scanMap, SelectionMap& _selectionMap) {
+    _scanMap.MoveToStart();
+    while (!_scanMap.AtEnd()) {
+        CNF cnf;
+        Record literal;
+        string table_name = _scanMap.CurrentKey();
+        Schema schema;
+        _catalog.GetSchema(table_name, schema);
+        if(cnf.ExtractCNF(_predicate, schema, literal) == -1)
+            exit(-1);
+
+        RelationalOp* scan_operator = &_scanMap.CurrentData();
+        Select table_selection(schema, cnf, literal, scan_operator);
+
+        Keyify<string> table_key(table_name);
+        _selectionMap.Insert(table_key, table_selection);
+
+        _scanMap.Advance();
+    }
 }
