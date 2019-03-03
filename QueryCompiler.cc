@@ -1,3 +1,5 @@
+#include <string>
+
 #include "QueryCompiler.h"
 #include "QueryOptimizer.h"
 #include "Schema.h"
@@ -7,6 +9,8 @@
 #include "Comparison.h"
 #include "Function.h"
 #include "RelOp.h"
+#include "TwoWayList.cc"
+#include "InefficientMap.cc"
 
 using namespace std;
 
@@ -26,15 +30,15 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	// create a SCAN operator for each table in the query
 	TableList* current_table = _tables;
 	while (current_table) {
-		cout << current_table->tableName << endl;
 
 		Schema schema;
 		DBFile table_file;
 		string table_name = current_table->tableName;
 
-//		catalog->GetSchema(table_name, schema);
-//		Scan table_scan(schema, table_file);
-//		scanMap.Insert(table_name, table_scan);
+		catalog->GetSchema(table_name, schema);
+		Scan table_scan(schema, table_file);
+		Keyify<string> table_key(table_name);
+		scanMap.Insert(table_key, table_scan);
 
 		current_table = current_table->next;
 	}

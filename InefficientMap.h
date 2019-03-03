@@ -3,6 +3,7 @@
 
 #include "TwoWayList.h"
 #include "Keyify.h"
+#include "RelOp.h"
 
 template <class Key, class Data>
 class InefficientMap {
@@ -83,5 +84,6 @@ private:
 };
 
 typedef InefficientMap<KeyString, Schema> SchemaMap;
+typedef InefficientMap<KeyString, Scan> ScanMap;
 
 #endif //_INEFFICIENT_MAP_H

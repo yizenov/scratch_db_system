@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+#include "Swap.h"
+#include "Config.h"
 #include "Schema.h"
 #include "Record.h"
 #include "DBFile.h"
@@ -46,8 +48,11 @@ private:
 	DBFile file;
 
 public:
+	Scan() {}
 	Scan(Schema& _schema, DBFile& _file);
 	virtual ~Scan();
+
+	int GetNoPages() { return noPages; }
 
 	virtual bool GetNext(Record& _record) {}
 
@@ -70,6 +75,7 @@ private:
 	RelationalOp* producer;
 
 public:
+    Select() {}
 	Select(Schema& _schema, CNF& _predicate, Record& _constants,
 		RelationalOp* _producer);
 	virtual ~Select();
@@ -100,6 +106,7 @@ private:
 	RelationalOp* producer;
 
 public:
+    Project() {}
 	Project(Schema& _schemaIn, Schema& _schemaOut, int _numAttsInput,
 		int _numAttsOutput, int* _keepMe, RelationalOp* _producer);
 	virtual ~Project();
@@ -128,6 +135,7 @@ private:
 	RelationalOp* right;
 
 public:
+    Join() {}
 	Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
 		CNF& _predicate, RelationalOp* _left, RelationalOp* _right);
 	virtual ~Join();
@@ -148,6 +156,7 @@ private:
 	RelationalOp* producer;
 
 public:
+    DuplicateRemoval() {}
 	DuplicateRemoval(Schema& _schema, RelationalOp* _producer);
 	virtual ~DuplicateRemoval();
 
@@ -172,6 +181,7 @@ private:
 	RelationalOp* producer;
 
 public:
+    Sum() {}
 	Sum(Schema& _schemaIn, Schema& _schemaOut, Function& _compute,
 		RelationalOp* _producer);
 	virtual ~Sum();
@@ -199,6 +209,7 @@ private:
 	RelationalOp* producer;
 
 public:
+    GroupBy() {}
 	GroupBy(Schema& _schemaIn, Schema& _schemaOut, OrderMaker& _groupingAtts,
 		Function& _compute,	RelationalOp* _producer);
 	virtual ~GroupBy();
@@ -222,6 +233,7 @@ private:
 	RelationalOp* producer;
 
 public:
+    WriteOut() {}
 	WriteOut(Schema& _schema, string& _outFile, RelationalOp* _producer);
 	virtual ~WriteOut();
 
