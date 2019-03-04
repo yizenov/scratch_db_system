@@ -74,8 +74,11 @@ void Project::Swap(Project &_other) {
 }
 
 Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
-	CNF& _predicate, RelationalOp* _left, RelationalOp* _right) {
+	CNF& _predicate, RelationalOp* _left, RelationalOp* _right) :
+    schemaLeft(_schemaLeft), schemaRight(_schemaRight), predicate(_predicate), left(_left), right(_right) {
 
+    //TODO: is a function for union two sketches provided?
+    schemaOut = _schemaLeft;
 }
 
 Join::~Join() {

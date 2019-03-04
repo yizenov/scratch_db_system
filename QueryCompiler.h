@@ -34,9 +34,10 @@ public:
 		FuncOperator* _finalFunction, AndList* _predicate,
 		NameList* _groupingAtts, int& _distinctAtts,
 		QueryExecutionTree& _queryTree);
-};
 
-void CreateScans(TableList& _tables, Catalog& _catalog, ScanMap& _scanMap);
-void CreateSelects(AndList& _predicate, Catalog& _catalog, ScanMap& _scanMap, SelectionMap& selectionMap);
+    void CreateScans(TableList& _tables);
+    void CreateSelects(AndList& _predicate);
+    Join CreateJoins(OptimizationTree& _root, AndList& _predicate);
+};
 
 #endif // _QUERY_COMPILER_H

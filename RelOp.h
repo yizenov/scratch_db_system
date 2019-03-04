@@ -144,6 +144,8 @@ public:
 
 	void Swap(Join& _other);
 
+	Schema& GetSchemaOut() { return schemaOut; }
+
 	virtual ostream& print(ostream& _os);
 };
 
