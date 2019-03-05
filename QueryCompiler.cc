@@ -38,21 +38,54 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	optimizer->Optimize(_tables, _predicate, root);
 
 	// create join operators based on the optimal order computed by the optimizer
-	Join root_join = CreateJoins(*root, *_predicate);
+	Join *root_join = CreateJoins(*root, *_predicate); //TODO: convert back to pointers
+    //TODO: there may not be any join predicate
 
 	// create the remaining operators based on the query
+	if (_attsToSelect) {
+        Project *projection = CreateProjection(*_attsToSelect, *root_join); // projection operator
+
+        // distinct operator
+        if (_distinctAtts && projection->GetNumAttsOutput() > 0) {
+            DuplicateRemoval distinct_operator(projection->GetSchemaOut(), projection); //TODO: is it used further?
+        }
+    }
 
 	// connect everything in the query execution tree and return
+	//TODO: WriteOut is used after the actual execution
 
 	// free the memory occupied by the parse tree since it is not necessary anymore
 }
 
-Join QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
+Project* QueryCompiler::CreateProjection(NameList& _attsToSelect, Join& _root_join) {
+    NameList* current_attr = &_attsToSelect;
+    int no_attr_in = 0, no_attr_out = 0;
+    while (current_attr) {
+        no_attr_out++;
+        current_attr = current_attr->next;
+    }
+    if (no_attr_out > 0) {
+        int *att_indices[no_attr_out];
+        Schema projection_schema;
+        Project *projection = new Project(_root_join.GetSchemaOut(), projection_schema, no_attr_in, no_attr_out, *att_indices, &_root_join);
+        return projection;
+    }
+}
+
+void QueryCompiler::CreateAggregators() {
+
+}
+
+void QueryCompiler::CreateGroupBy() {
+
+}
+
+Join* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
     OptimizationTree* node_ptr = &_root;
     while (node_ptr) {
 
         if(node_ptr->leftChild->leftChild && node_ptr->leftChild->rightChild) {
-            Join previous_join = CreateJoins(*node_ptr->leftChild, _predicate);
+            Join *previous_join = CreateJoins(*node_ptr->leftChild, _predicate);
 
             if (node_ptr->tables.empty()) {
                 cout << "right table is missing" << endl;
@@ -63,7 +96,7 @@ Join QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
             catalog->GetSchema(right_table_name, right_schema);
 
             CNF joined_cnf;
-            if(joined_cnf.ExtractCNF(_predicate, previous_join.GetSchemaOut(), right_schema) == -1) {
+            if(joined_cnf.ExtractCNF(_predicate, previous_join->GetSchemaOut(), right_schema) == -1) {
                 cout << "failed in joined cnf function" << endl;
                 exit(-1);
             }
@@ -75,16 +108,16 @@ Join QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
 
             if (is_right_push) {
                 Select *right_selection = &selectionMap.Find(right_table_key);
-                Join *new_join = new Join(previous_join.GetSchemaOut(), right_schema, joined_schema, joined_cnf, &previous_join, right_selection);
-                return *new_join;
+                Join *new_join = new Join(previous_join->GetSchemaOut(), right_schema, joined_schema, joined_cnf, previous_join, right_selection);
+                return new_join;
             } else {
                 if (!scanMap.IsThere(right_table_key)) {
                     cout << "right table has either scan or select" << endl;
                     exit(-1);
                 }
                 Scan *right_scan = &scanMap.Find(right_table_key);
-                Join *new_join = new Join(previous_join.GetSchemaOut(), right_schema, joined_schema, joined_cnf, &previous_join, right_scan);
-                return *new_join;
+                Join *new_join = new Join(previous_join->GetSchemaOut(), right_schema, joined_schema, joined_cnf, previous_join, right_scan);
+                return new_join;
             }
         }
 
@@ -121,7 +154,7 @@ Join QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
             if (is_right_push) {
                 Select *right_selection = &selectionMap.Find(right_table_key);
                 Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_selection, right_selection);
-                return *new_join;
+                return new_join;
             } else {
                 if (!scanMap.IsThere(right_table_key)) {
                     cout << "right table has either scan or select" << endl;
@@ -129,7 +162,7 @@ Join QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
                 }
                 Scan *right_scan = &scanMap.Find(right_table_key);
                 Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_selection, right_scan);
-                return *new_join;
+                return new_join;
             }
         } else {
             if (!scanMap.IsThere(left_table_key)) {
@@ -140,7 +173,7 @@ Join QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
             if (is_right_push) {
                 Select *right_selection = &selectionMap.Find(right_table_key);
                 Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_scan, right_selection);
-                return *new_join;
+                return new_join;
             } else {
                 if (!scanMap.IsThere(right_table_key)) {
                     cout << "right table has either scan or select" << endl;
@@ -148,12 +181,11 @@ Join QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
                 }
                 Scan *right_scan = &scanMap.Find(right_table_key);
                 Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_scan, right_scan);
-                return *new_join;
+                return new_join;
             }
         }
     }
 }
-
 
 void QueryCompiler::CreateScans(TableList& _tables) {
 	TableList* current_table = &_tables;
@@ -184,9 +216,10 @@ void QueryCompiler::CreateSelects(AndList& _predicate) {
             cout << "failed in single cnf function" << endl;
             exit(-1);
         }
+        //TODO: estimate survived tuples
 
         if (cnf.numAnds > 0) {
-            RelationalOp *scan_operator = &scanMap.CurrentData();
+            Scan *scan_operator = &scanMap.CurrentData();
             Select table_selection(schema, cnf, literal, scan_operator);
 
             Keyify<string> table_key(table_name);

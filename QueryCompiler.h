@@ -37,7 +37,10 @@ public:
 
     void CreateScans(TableList& _tables);
     void CreateSelects(AndList& _predicate);
-    Join CreateJoins(OptimizationTree& _root, AndList& _predicate);
+    Join* CreateJoins(OptimizationTree& _root, AndList& _predicate);
+    Project* CreateProjection(NameList& _attsToSelec, Join& _root_join);
+	void CreateAggregators();
+	void CreateGroupBy();
 };
 
 #endif // _QUERY_COMPILER_H

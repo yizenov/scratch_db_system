@@ -18,19 +18,19 @@ Record :: Record () {
 
 Record::Record (const Record& copyMe) {
 	// this is a deep copy, so allocate the bits and move them over!
-	delete [] bits;
-	bits = new char[((int *) copyMe.bits)[0]];
-	memcpy (bits, copyMe.bits, ((int *) copyMe.bits)[0]);
+    //delete[] bits;
+    bits = new char[((int *) copyMe.bits)[0]];
+    memcpy(bits, copyMe.bits, ((int *) copyMe.bits)[0]);
 }
 
 Record& Record::operator=(const Record& copyMe) {
 	// handle self-assignment first
 	if (this == &copyMe) return *this;
 
-	// this is a deep copy, so allocate the bits and move them over!
-	delete [] bits;
-	bits = new char[((int *) copyMe.bits)[0]];
-	memcpy (bits, copyMe.bits, ((int *) copyMe.bits)[0]);
+    // this is a deep copy, so allocate the bits and move them over!
+    delete[] bits;
+    bits = new char[((int *) copyMe.bits)[0]];
+    memcpy(bits, copyMe.bits, ((int *) copyMe.bits)[0]);
 
 	return *this;
 }

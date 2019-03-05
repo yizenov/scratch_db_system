@@ -1,5 +1,4 @@
 
-
 #include "RelOp.h"
 
 using namespace std;
@@ -8,14 +7,9 @@ ostream& operator<<(ostream& _os, RelationalOp& _op) {
 	return _op.print(_os);
 }
 
+Scan::Scan(Schema& _schema, DBFile& _file) : schema(_schema), file(_file) {}
 
-Scan::Scan(Schema& _schema, DBFile& _file) {
-
-}
-
-Scan::~Scan() {
-
-}
+Scan::~Scan() {}
 
 ostream& Scan::print(ostream& _os) {
     return _os << "SCAN";
@@ -27,15 +21,11 @@ void Scan::Swap(Scan &_other) {
     OBJ_SWAP(file, _other.file);
 }
 
-
 Select::Select(Schema& _schema, CNF& _predicate, Record& _constants,
-	RelationalOp* _producer) {
+	RelationalOp* _producer) : schema(_schema), predicate(_predicate),
+	constants(_constants) {}
 
-}
-
-Select::~Select() {
-
-}
+Select::~Select() {}
 
 ostream& Select::print(ostream& _os) {
 	return _os << "SELECT";
@@ -49,15 +39,16 @@ void Select::Swap(Select &_other) {
     SWAP(producer, _other.producer);
 }
 
-
 Project::Project(Schema& _schemaIn, Schema& _schemaOut, int _numAttsInput,
-	int _numAttsOutput, int* _keepMe, RelationalOp* _producer) {
+	int _numAttsOutput, int* _keepMe, RelationalOp* _producer) :
+	schemaIn(_schemaIn), numAttsInput(_numAttsInput),
+	numAttsOutput(_numAttsOutput), keepMe(_keepMe), producer(_producer) {
 
+    //_keepMe - indices of columns that is from joined schema
+    schemaOut = _schemaOut; //TODO: need to adjust the schema
 }
 
-Project::~Project() {
-
-}
+Project::~Project() {}
 
 ostream& Project::print(ostream& _os) {
 	return _os << "PROJECT";
@@ -74,16 +65,25 @@ void Project::Swap(Project &_other) {
 }
 
 Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
-	CNF& _predicate, RelationalOp* _left, RelationalOp* _right) :
-    schemaLeft(_schemaLeft), schemaRight(_schemaRight), predicate(_predicate), left(_left), right(_right) {
+	CNF& _predicate, RelationalOp* _left, RelationalOp* _right) : schemaLeft(_schemaLeft),
+	schemaRight(_schemaRight), predicate(_predicate), left(_left), right(_right) {
 
     //TODO: is a function for union two sketches provided?
-    schemaOut = _schemaLeft;
+    schemaOut = _schemaOut;
+
+    for (auto attr : schemaLeft.GetAtts())
+        schemaOut.GetAtts().emplace_back(attr);
+    for (auto attr : schemaRight.GetAtts())
+        schemaOut.GetAtts().emplace_back(attr);
+
+    unsigned int est_no_tuple = 0; //TODO: this value must be estimate
+    schemaOut.SetTuplesNumber(est_no_tuple);
+
+    string _table_path = "no path"; // this is empty since this is an intermediate object
+    schemaOut.SetTablePath(_table_path);
 }
 
-Join::~Join() {
-
-}
+Join::~Join() {}
 
 ostream& Join::print(ostream& _os) {
 	return _os << "JOIN";
@@ -98,13 +98,12 @@ void Join::Swap(Join &_other) {
     SWAP(right, _other.right);
 }
 
-DuplicateRemoval::DuplicateRemoval(Schema& _schema, RelationalOp* _producer) {
-
+DuplicateRemoval::DuplicateRemoval(Schema& _schema, RelationalOp* _producer) :
+    schema(_schema), producer(_producer) {
+    //TODO: get the distinct values only
 }
 
-DuplicateRemoval::~DuplicateRemoval() {
-
-}
+DuplicateRemoval::~DuplicateRemoval() {}
 
 ostream& DuplicateRemoval::print(ostream& _os) {
 	return _os << "DISTINCT";
@@ -116,14 +115,10 @@ void DuplicateRemoval::Swap(DuplicateRemoval &_other) {
     SWAP(producer, _other.producer);
 }
 
-Sum::Sum(Schema& _schemaIn, Schema& _schemaOut, Function& _compute,
-	RelationalOp* _producer) {
+Sum::Sum(Schema& _schemaIn, Schema& _schemaOut, Function& _compute, RelationalOp* _producer) :
+    schemaIn(_schemaIn), schemaOut(_schemaOut), compute(_compute), producer(_producer) {}
 
-}
-
-Sum::~Sum() {
-
-}
+Sum::~Sum() {}
 
 ostream& Sum::print(ostream& _os) {
 	return _os << "SUM";
@@ -137,14 +132,11 @@ void Sum::Swap(Sum &_other) {
     SWAP(producer, _other.producer);
 }
 
-GroupBy::GroupBy(Schema& _schemaIn, Schema& _schemaOut, OrderMaker& _groupingAtts,
-	Function& _compute,	RelationalOp* _producer) {
+GroupBy::GroupBy(Schema& _schemaIn, Schema& _schemaOut, OrderMaker& _groupingAtts, Function& _compute,
+    RelationalOp* _producer) : schemaIn(_schemaIn), schemaOut(_schemaOut), groupingAtts(_groupingAtts),
+    compute(_compute), producer(_producer) {}
 
-}
-
-GroupBy::~GroupBy() {
-
-}
+GroupBy::~GroupBy() {}
 
 ostream& GroupBy::print(ostream& _os) {
 	return _os << "GROUP BY";
@@ -159,14 +151,10 @@ void GroupBy::Swap(GroupBy &_other) {
     SWAP(producer, _other.producer);
 }
 
+WriteOut::WriteOut(Schema& _schema, string& _outFile, RelationalOp* _producer) :
+    schema(_schema), outFile(_outFile), producer(_producer) {}
 
-WriteOut::WriteOut(Schema& _schema, string& _outFile, RelationalOp* _producer) {
-
-}
-
-WriteOut::~WriteOut() {
-
-}
+WriteOut::~WriteOut() {}
 
 ostream& WriteOut::print(ostream& _os) {
 	return _os << "OUTPUT";
@@ -178,7 +166,6 @@ void WriteOut::Swap(WriteOut &_other) {
     STL_SWAP(outFile, _other.outFile);
     SWAP(producer, _other.producer);
 }
-
 
 ostream& operator<<(ostream& _os, QueryExecutionTree& _op) {
 	return _os << "QUERY EXECUTION TREE";

@@ -113,6 +113,9 @@ public:
 
 	virtual bool GetNext(Record& _record) {}
 
+	int GetNumAttsOutput() { return numAttsOutput; }
+	Schema& GetSchemaOut() { return schemaOut; }
+
 	void Swap(Project& _other);
 
 	virtual ostream& print(ostream& _os);
@@ -256,7 +259,7 @@ public:
 	virtual ~QueryExecutionTree() {}
 
 	void ExecuteQuery() {}
-	void SetRoot(RelationalOp& _root) {root = &_root;}
+	void SetRoot(RelationalOp& _root) { root = &_root; } //TODO: assign operator is not impl.
 
     friend ostream& operator<<(ostream& _os, QueryExecutionTree& _op);
 };
