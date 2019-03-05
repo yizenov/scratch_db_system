@@ -39,8 +39,11 @@ public:
     void CreateSelects(AndList& _predicate);
     Join* CreateJoins(OptimizationTree& _root, AndList& _predicate);
     Project* CreateProjection(NameList& _attsToSelec, Join& _root_join);
-	void CreateAggregators();
-	void CreateGroupBy();
+    Sum* CreateAggregators(FuncOperator& _finalFunction, RelationalOp& _producer);
+    GroupBy* CreateGroupBy(NameList& _groupingAtts, Join& _root_join);
+	void BuildExecutionTree(QueryExecutionTree& _queryTree, Join& _root_join,
+	        GroupBy &group_by_operator, Sum &sum_operator, Project &projection,
+	        DuplicateRemoval &distinct_operator);
 };
 
 #endif // _QUERY_COMPILER_H

@@ -42,19 +42,60 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
     //TODO: there may not be any join predicate
 
 	// create the remaining operators based on the query
+    GroupBy *group_by_operator;
+    Sum *sum_operator;
+    Project *projection;
+    DuplicateRemoval *distinct_operator;
+
+    // group-by operator
+    if (_groupingAtts) {
+        //TODO: group by goes before projection?
+        group_by_operator = CreateGroupBy(*_groupingAtts, *root_join);
+    }
+
+    // projection operator
 	if (_attsToSelect) {
-        Project *projection = CreateProjection(*_attsToSelect, *root_join); // projection operator
+        projection = CreateProjection(*_attsToSelect, *root_join);
 
         // distinct operator
         if (_distinctAtts && projection->GetNumAttsOutput() > 0) {
-            DuplicateRemoval distinct_operator(projection->GetSchemaOut(), projection); //TODO: is it used further?
+            distinct_operator = new DuplicateRemoval(projection->GetSchemaOut(), projection); //TODO: is it used further?
         }
     }
 
+    // sum operator
+    if (_finalFunction) {
+        //TODO: when is this executed?
+        sum_operator = CreateAggregators(*_finalFunction, *root_join);
+    }
+
 	// connect everything in the query execution tree and return
+	BuildExecutionTree(_queryTree, *root_join, *group_by_operator, *sum_operator, *projection, *distinct_operator);
+
 	//TODO: WriteOut is used after the actual execution
 
 	// free the memory occupied by the parse tree since it is not necessary anymore
+	delete _tables;
+	delete _attsToSelect;
+	delete _finalFunction;
+	delete _predicate;
+	delete _groupingAtts;
+	_distinctAtts = 0;
+
+	//TODO: can we delete these now?
+	//delete distinct_operator;
+    //delete projection;
+    //delete sum_operator;
+    //delete group_by_operator;
+	delete root; //TODO: does it delete nested struct objects in heap?
+	//delete root_join;
+	//selectionMap.Clear();
+	//scanMap.Clear();
+}
+
+void QueryCompiler::BuildExecutionTree(QueryExecutionTree& _queryTree, Join& _root_join, GroupBy &group_by_operator,
+                                       Sum &sum_operator, Project &projection, DuplicateRemoval &distinct_operator) {
+
 }
 
 Project* QueryCompiler::CreateProjection(NameList& _attsToSelect, Join& _root_join) {
@@ -72,12 +113,47 @@ Project* QueryCompiler::CreateProjection(NameList& _attsToSelect, Join& _root_jo
     }
 }
 
-void QueryCompiler::CreateAggregators() {
+Sum* QueryCompiler::CreateAggregators(FuncOperator& _finalFunction, RelationalOp& _producer) {
+    Function function;
+    string attr_name = _finalFunction.leftOperand->value; //TODO: this is attr name, how to get the table name?
+    Schema schema, agg_schema;
 
+    // assumption: attribute name belongs to one table only
+    vector<string> tables;
+    catalog->GetTables(tables);
+    for (string table : tables) {
+        catalog->GetSchema(table, schema);
+        if (schema.Index(attr_name) != -1)
+            break;
+    }
+
+    function.GrowFromParseTree(&_finalFunction, schema);
+    Sum *sum_operator = new Sum(schema, agg_schema, function, &_producer); //TODO: do insert the join or projection?
+    return sum_operator;
 }
 
-void QueryCompiler::CreateGroupBy() {
+GroupBy* QueryCompiler::CreateGroupBy(NameList& _groupingAtts, Join& _root_join) {
 
+    Schema *root_schema = &_root_join.GetSchemaOut();
+    vector<int> col_indices;
+
+    NameList* current_group = &_groupingAtts;
+    while (current_group) {
+        string attr_name = current_group->name;
+        int col_idx = root_schema->Index(attr_name);
+        if (col_idx == -1)
+            continue;
+        col_indices.push_back(col_idx);
+        current_group = current_group->next;
+    }
+
+    int no_cols = (int) col_indices.size();
+    OrderMaker orderMaker(*root_schema, &col_indices[0], no_cols);
+
+    Schema group_by_schema;
+    Function function; //TODO: usage?
+    GroupBy *group_by_operator = new GroupBy(*root_schema, group_by_schema, orderMaker, function, &_root_join);
+    return group_by_operator;
 }
 
 Join* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
