@@ -87,7 +87,7 @@ public:
 
 	Schema& GetSchemaOut() { return schema; }
 
-	virtual void Swap(Select& _other);
+	void Swap(Select& _other);
 
 	virtual ostream& print(ostream& _os);
 };
@@ -120,6 +120,7 @@ public:
 
 	int GetNumAttsOutput() { return numAttsOutput; }
 	Schema& GetSchemaOut() { return schemaOut; }
+	void SetProducer(RelationalOp* _producer) { producer = _producer; }
 
 	void Swap(Project& _other);
 

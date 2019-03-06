@@ -118,7 +118,7 @@ void Project::Swap(Project &_other) {
 	SWAP(numAttsInput, _other.numAttsInput);
 	SWAP(numAttsOutput, _other.numAttsOutput);
 	SWAP(keepMe, _other.keepMe);
-	SWAP(producer, _other.producer);
+    SWAP(producer, _other.producer); //TODO: OBJ_SWAP??
 }
 
 Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
@@ -190,6 +190,8 @@ void Join::Swap(Join &_other) {
     OBJ_SWAP(schemaLeft, _other.schemaLeft);
     OBJ_SWAP(schemaRight, _other.schemaRight);
     OBJ_SWAP(predicate, _other.predicate);
+//    left->Swap(*_other.left);
+//    right->Swap(*_other.right);
     SWAP(left, _other.left);
     SWAP(right, _other.right);
 }

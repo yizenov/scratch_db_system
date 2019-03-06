@@ -49,29 +49,25 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 
     // create the remaining operators based on the query
     //TODO: create instances in heap and convert the functions to void
-    GroupBy *group_by_operator;
-    Sum *sum_operator;
-    Project *projection;
-    DuplicateRemoval *distinct_operator;
-    Join *root_join;
+    Project *projection = new Project();
+    RelationalOp* pre_out_operator = new WriteOut();
 
 	// create join operators based on the optimal order computed by the optimizer
 	if (join_check) {
-        root_join = CreateJoins(*root, *_predicate);
+        pre_out_operator = CreateJoins(*root, *_predicate);
     }
+
+    Select *single_selection;
 
     if (_groupingAtts) { // group-by operator
         if (join_check) {
-            group_by_operator = CreateGroupBy(*_groupingAtts, *root_join);
-            group_by_check = true;
+            pre_out_operator = CreateGroupBy(*_groupingAtts, *pre_out_operator);
         } else if (selectionMap.Length() == 1) {
             Select single_selection = selectionMap.CurrentData();
-            group_by_operator = CreateGroupBy(*_groupingAtts, single_selection);
-            group_by_check = true;
+            pre_out_operator = CreateGroupBy(*_groupingAtts, single_selection);
         } else if (scanMap.Length() == 1) {
             Scan single_scan = scanMap.CurrentData();
-            group_by_operator = CreateGroupBy(*_groupingAtts, single_scan);
-            group_by_check = true;
+            pre_out_operator = CreateGroupBy(*_groupingAtts, single_scan);
         } else {
             cout << "incorrect parent operator for group-by" << endl;
             exit(-1);
@@ -79,16 +75,13 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
         // TODO: distinct and sum happen here automatically?
     } else if (_finalFunction) { // sum operator
         if (join_check) {
-            sum_operator = CreateAggregators(*_finalFunction, *root_join);
-            sum_check = true;
+            pre_out_operator = CreateAggregators(*_finalFunction, *pre_out_operator);
         } else if (selectionMap.Length() == 1) {
             Select single_selection = selectionMap.CurrentData();
-            sum_operator = CreateAggregators(*_finalFunction, single_selection);
-            sum_check = true;
+            pre_out_operator = CreateAggregators(*_finalFunction, single_selection);
         } else if (scanMap.Length() == 1) {
             Scan single_scan = scanMap.CurrentData();
-            sum_operator = CreateAggregators(*_finalFunction, single_scan);
-            sum_check = true;
+            pre_out_operator = CreateAggregators(*_finalFunction, single_scan);
         } else {
             cout << "incorrect parent operator for sum aggregationn" << endl;
             exit(-1);
@@ -96,24 +89,26 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
         //TODO: handle project+agg queries
     } else if (_attsToSelect) { // projection operator
         if (join_check) {
-            projection = CreateProjection(*_attsToSelect, *root_join);
+            CreateProjection(*_attsToSelect, *pre_out_operator, projection);
             project_check = true;
         } else if (selectionMap.Length() == 1) {
-            Select single_selection = selectionMap.CurrentData();
-            projection = CreateProjection(*_attsToSelect, single_selection);
+            single_selection = &selectionMap.CurrentData();
+            CreateProjection(*_attsToSelect, *single_selection, projection);
             project_check = true;
         } else if (scanMap.Length() == 1) {
             Scan single_scan = scanMap.CurrentData();
-            projection = CreateProjection(*_attsToSelect, single_scan);
+            CreateProjection(*_attsToSelect, single_scan, projection); //TODO: check this case
             project_check = true;
         } else {
             cout << "incorrect parent operator for projection" << endl;
             exit(-1);
         }
 
-        if (_distinctAtts && projection->GetNumAttsOutput() > 0) { // distinct operator
-            distinct_operator = new DuplicateRemoval(projection->GetSchemaOut(), projection);
-            distinct_check = true;
+        projection->SetProducer(single_selection);
+        pre_out_operator = projection;
+
+        if (_distinctAtts && project_check) { // distinct operator
+            pre_out_operator = new DuplicateRemoval(pre_out_operator->GetSchemaOut(), pre_out_operator);
         }
     } else {
         cout << "unsupported operator was provided" << endl;
@@ -121,26 +116,9 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
     }
 
     //TODO: WriteOut is used after the actual execution
-    string out_file_name = "out file path";
-    WriteOut *write_out;
-
-//    Schema write_schema;
-//    string schema_out_file_name = "schema out file name";
-//    write_schema.SetTablePath(schema_out_file_name);
     //TODO: new schema or schema of the producer?
-
-    if (group_by_check) {
-        write_out = new WriteOut(group_by_operator->GetSchemaOut(), out_file_name, group_by_operator);
-    } else if (sum_check) {
-        write_out = new WriteOut(sum_operator->GetSchemaOut(), out_file_name, sum_operator);
-    } else if (distinct_check) {
-        write_out = new WriteOut(distinct_operator->GetSchemaOut(), out_file_name, distinct_operator);
-    } else if (project_check) {
-        write_out = new WriteOut(projection->GetSchemaOut(), out_file_name, projection);
-    } else {
-        cout << "unsupported operator was provided" << endl;
-        exit(-1);
-    }
+    string out_file_name = "out file path";
+    WriteOut *write_out = new WriteOut(pre_out_operator->GetSchemaOut(), out_file_name, pre_out_operator);
 
 	// connect everything in the query execution tree and return
     QueryExecutionTree *queryTree = new QueryExecutionTree();
@@ -167,10 +145,11 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	//scanMap.Clear();
 }
 
-Project* QueryCompiler::CreateProjection(NameList& _attsToSelect, RelationalOp& _producer) {
+void QueryCompiler::CreateProjection(NameList& _attsToSelect, RelationalOp& _producer, Project *_projection) {
 
     vector<int> attr_names;
     int no_attr_out = 0;
+
     Schema producer_schema = _producer.GetSchemaOut();
 
     NameList* current_attr = &_attsToSelect;
@@ -189,8 +168,9 @@ Project* QueryCompiler::CreateProjection(NameList& _attsToSelect, RelationalOp& 
     if (no_attr_out > 0) {
         Schema projection_schema(producer_schema);
         int no_attr_in = (int) producer_schema.GetAtts().size();
-        Project *projection = new Project(producer_schema, projection_schema, no_attr_in, no_attr_out, &attr_names[0], &_producer);
-        return projection;
+        _projection = new Project(producer_schema, projection_schema, no_attr_in, no_attr_out, &attr_names[0], &_producer);
+        //_projection.Swap(*projection);
+        //return *projection;
     } else {
         cout << "no attribute to project" << endl;
         exit(-1);
@@ -374,9 +354,9 @@ void QueryCompiler::CreateScans(TableList& _tables) {
 		string table_name = current_table->tableName;
 
 		catalog->GetSchema(table_name, schema);
-		Scan table_scan(schema, table_file);
+		Scan *table_scan = new Scan(schema, table_file);
 		Keyify<string> table_key(table_name);
-		scanMap.Insert(table_key, table_scan);
+		scanMap.Insert(table_key, *table_scan);
 
 		current_table = current_table->next;
 	}
@@ -397,9 +377,9 @@ void QueryCompiler::CreateSelects(AndList& _predicate) {
 
         //if (cnf.numAnds > 0) {
             Scan *scan_operator = &scanMap.CurrentData();
-            Select table_selection(schema, cnf, literal, scan_operator);
+            Select *table_selection = new Select(schema, cnf, literal, scan_operator);
             Keyify<string> table_key(table_name);
-            selectionMap.Insert(table_key, table_selection);
+            selectionMap.Insert(table_key, *table_selection);
         //}
         scanMap.Advance();
     }
