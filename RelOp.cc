@@ -31,6 +31,10 @@ ostream& Select::print(ostream& _os) {
 	return _os << "SELECT";
 }
 
+void Select::SetEstimatedCardinality(unsigned int& survived_no_tuples) {
+    schema.SetTuplesNumber(survived_no_tuples);
+}
+
 void Select::Swap(Select &_other) {
     SWAP(noPages, _other.noPages);
     OBJ_SWAP(schema, _other.schema);

@@ -11,6 +11,7 @@
 #include "RelOp.h"
 #include "TwoWayList.cc"
 #include "InefficientMap.cc"
+#include "Config.h"
 
 using namespace std;
 
@@ -38,7 +39,7 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	optimizer->Optimize(_tables, _predicate, root);
 
 	// create join operators based on the optimal order computed by the optimizer
-	Join *root_join = CreateJoins(*root, *_predicate); //TODO: convert back to pointers
+	Join *root_join = CreateJoins(*root, *_predicate);
     //TODO: there may not be any join predicate
 
 	// create the remaining operators based on the query
@@ -95,7 +96,8 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 
 void QueryCompiler::BuildExecutionTree(QueryExecutionTree& _queryTree, Join& _root_join, GroupBy &group_by_operator,
                                        Sum &sum_operator, Project &projection, DuplicateRemoval &distinct_operator) {
-
+    //TODO: connect join_tree -> group_by/sum -> projection -> distinct
+    //TODO: check for nulls, reset the root of QueryExecutionTree
 }
 
 Project* QueryCompiler::CreateProjection(NameList& _attsToSelect, Join& _root_join) {
@@ -118,6 +120,7 @@ Sum* QueryCompiler::CreateAggregators(FuncOperator& _finalFunction, RelationalOp
     string attr_name = _finalFunction.leftOperand->value; //TODO: this is attr name, how to get the table name?
     Schema schema, agg_schema;
 
+    //TODO: this part has to be implemented without iteration over the all tables
     // assumption: attribute name belongs to one table only
     vector<string> tables;
     catalog->GetTables(tables);
@@ -133,7 +136,7 @@ Sum* QueryCompiler::CreateAggregators(FuncOperator& _finalFunction, RelationalOp
 }
 
 GroupBy* QueryCompiler::CreateGroupBy(NameList& _groupingAtts, Join& _root_join) {
-
+    //TODO: verify this method for correctness
     Schema *root_schema = &_root_join.GetSchemaOut();
     vector<int> col_indices;
 
@@ -284,7 +287,7 @@ void QueryCompiler::CreateSelects(AndList& _predicate) {
     scanMap.MoveToStart();
     while (!scanMap.AtEnd()) {
         CNF cnf;
-        Record literal;
+        Record literal; //TODO: how to get the constants?
         string table_name = scanMap.CurrentKey();
         Schema schema;
         catalog->GetSchema(table_name, schema);
@@ -292,11 +295,54 @@ void QueryCompiler::CreateSelects(AndList& _predicate) {
             cout << "failed in single cnf function" << endl;
             exit(-1);
         }
-        //TODO: estimate survived tuples
 
         if (cnf.numAnds > 0) {
+
+            //TODO: may need to move this logic into QueryOptimizer
+            // estimating the cardinality of a relation
+            int denominator_value = 0;
+
+            if (cnf.andList[0].operand2 == Literal) {
+                CompOperator anOperator = cnf.andList[0].op;
+                string attr_name = schema.GetAtts()[cnf.andList[0].whichAtt1].name;
+                if (anOperator == LessThan || anOperator == GreaterThan) {
+                    denominator_value = 3;
+                } else if (anOperator == Equals) {
+                    int no_distincts = schema.GetDistincts(attr_name);
+                    if (no_distincts <= 0) {
+                        cout << "Incorrect distinct value" << endl;
+                        exit(-1);
+                    }
+                    denominator_value = no_distincts;
+                } else {
+                    cout << "Unsupported operator" << endl;
+                    exit(-1);
+                }
+            }
+
+            unsigned counter = 1;
+            while (counter < cnf.numAnds) {
+                if (cnf.andList[counter].operand2 == Literal) {
+                    CompOperator anOperator = cnf.andList[counter].op;
+                    string attr_name = schema.GetAtts()[cnf.andList[counter].whichAtt1].name;
+                    if (anOperator == LessThan || anOperator == GreaterThan) {
+                        denominator_value *= 3;
+                    } else if (anOperator == Equals) {
+                        int no_distincts = schema.GetDistincts(attr_name);
+                        if (no_distincts <= 0) {
+                            cout << "Incorrect distinct value" << endl;
+                            exit(-1);
+                        }
+                        denominator_value *= no_distincts;
+                    }
+                }
+                counter++;
+            }
+
+            unsigned int cardinality = schema.GetTuplesNumber() / denominator_value;
             Scan *scan_operator = &scanMap.CurrentData();
             Select table_selection(schema, cnf, literal, scan_operator);
+            table_selection.SetEstimatedCardinality(cardinality);
 
             Keyify<string> table_key(table_name);
             selectionMap.Insert(table_key, table_selection);

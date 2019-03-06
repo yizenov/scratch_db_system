@@ -81,6 +81,7 @@ public:
 	virtual ~Select();
 
 	virtual bool GetNext(Record& _record) {}
+	void SetEstimatedCardinality(unsigned int& survived_no_tuples);
 
 	virtual void Swap(Select& _other);
 

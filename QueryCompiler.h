@@ -16,6 +16,7 @@
 #include "InefficientMap.h"
 #include "TwoWayList.h"
 #include "Keyify.h"
+#include "Config.h"
 
 
 class QueryCompiler {
