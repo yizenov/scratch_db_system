@@ -37,7 +37,7 @@ class Schema {
 private:
 	// attributes in schema
 	vector<Attribute> atts;
-	unsigned int tuple_no;
+	unsigned long int tuple_no;
 	string table_path;
 	bool isChanged;
 
@@ -91,8 +91,8 @@ public:
 	friend ostream& operator<<(ostream& _os, Schema& _c);
 
 	// getter/setter for number of tuples in the table
-	void SetTuplesNumber(unsigned int& _tupleNumber);
-	unsigned int GetTuplesNumber();
+	void SetTuplesNumber(unsigned long int& _tupleNumber);
+	unsigned long int GetTuplesNumber();
 
 	// getter/setter for the path of the table
 	void SetTablePath(string& _tablePath);

@@ -56,6 +56,8 @@ public:
 
 	virtual bool GetNext(Record& _record) {}
 
+    Schema& GetSchemaOut() { return schema; }
+
 	void Swap(Scan& _other);
 
 	virtual ostream& print(ostream& _os);
@@ -81,7 +83,8 @@ public:
 	virtual ~Select();
 
 	virtual bool GetNext(Record& _record) {}
-	void SetEstimatedCardinality(unsigned int& survived_no_tuples);
+
+    Schema& GetSchemaOut() { return schema; }
 
 	virtual void Swap(Select& _other);
 
@@ -170,6 +173,8 @@ public:
 
 	void Swap(DuplicateRemoval& _other);
 
+    Schema& GetSchemaOut() { return schema; }
+
 	virtual ostream& print(ostream& _os);
 };
 
@@ -195,6 +200,8 @@ public:
 	virtual bool GetNext(Record& _record) {}
 
 	void Swap(Sum& _other);
+
+    Schema& GetSchemaOut() { return schemaOut; }
 
 	virtual ostream& print(ostream& _os);
 };
@@ -224,6 +231,8 @@ public:
 
 	void Swap(GroupBy& _other);
 
+    Schema& GetSchemaOut() { return schemaOut; }
+
 	virtual ostream& print(ostream& _os);
 };
 
@@ -246,6 +255,8 @@ public:
 	virtual bool GetNext(Record& _record) {}
 
 	void Swap(WriteOut& _other);
+
+    Schema& GetSchemaOut() { return schema; }
 
 	virtual ostream& print(ostream& _os);
 };

@@ -52,8 +52,8 @@ public:
 	/* Get/Set the number of tuples in _table.
 	 * Get returns true if _table exists, false otherwise.
 	 */
-	bool GetNoTuples(string& _table, unsigned int& _noTuples);
-	void SetNoTuples(string& _table, unsigned int& _noTuples);
+	bool GetNoTuples(string& _table, unsigned long int& _noTuples);
+	void SetNoTuples(string& _table, unsigned long int& _noTuples);
 
 	/* Get/Set the location of the physical file containing the data.
 	 * Get returns true if _table exists, false otherwise.

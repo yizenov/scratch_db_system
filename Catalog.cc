@@ -251,7 +251,7 @@ bool Catalog::Save() {
   return true;
 }
 
-bool Catalog::GetNoTuples(string &_table, unsigned int &_noTuples) {
+bool Catalog::GetNoTuples(string &_table, unsigned long int &_noTuples) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 0)
     return false;
@@ -260,7 +260,7 @@ bool Catalog::GetNoTuples(string &_table, unsigned int &_noTuples) {
   return true;
 }
 
-void Catalog::SetNoTuples(string &_table, unsigned int &_noTuples) {
+void Catalog::SetNoTuples(string &_table, unsigned long int &_noTuples) {
   KeyString table_name(_table);
   if (schema_data_->IsThere(table_name) == 1) {
     Schema *schema_ = &schema_data_->Find(table_name);
@@ -461,7 +461,7 @@ void Catalog::UploadSchemas() {
       sqlite3_clear_bindings(inner_stmt_one);
       sqlite3_reset(inner_stmt_one);
 
-      auto tuple_no = (unsigned int)sqlite3_column_int(stmt, 1);
+      auto tuple_no = (unsigned long int)sqlite3_column_int(stmt, 1);
       string table_path =
           string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2)));
 

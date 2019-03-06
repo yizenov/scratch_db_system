@@ -39,7 +39,7 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	optimizer->Optimize(_tables, _predicate, root);
 
     // create the remaining operators based on the query
-    //TODO: create instances in heap and conver the functions to void
+    //TODO: create instances in heap and convert the functions to void
     GroupBy *group_by_operator;
     Sum *sum_operator;
     Project *projection;
@@ -74,19 +74,19 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
     string out_file_name = "out file path";
     WriteOut *write_out;
 
-    Schema write_schema;
-    string schema_out_file_name = "schema out file name";
-    write_schema.SetTablePath(schema_out_file_name);
+//    Schema write_schema;
+//    string schema_out_file_name = "schema out file name";
+//    write_schema.SetTablePath(schema_out_file_name);
     //TODO: new schema or schema of the producer?
 
     if (group_by_check) {
-        write_out = new WriteOut(write_schema, out_file_name, group_by_operator);
+        write_out = new WriteOut(group_by_operator->GetSchemaOut(), out_file_name, group_by_operator);
     } else if (sum_check) {
-        write_out = new WriteOut(write_schema, out_file_name, sum_operator);
+        write_out = new WriteOut(sum_operator->GetSchemaOut(), out_file_name, sum_operator);
     } else if (distinct_check) {
-        write_out = new WriteOut(write_schema, out_file_name, distinct_operator);
+        write_out = new WriteOut(distinct_operator->GetSchemaOut(), out_file_name, distinct_operator);
     } else if (project_check) {
-        write_out = new WriteOut(write_schema, out_file_name, projection);
+        write_out = new WriteOut(projection->GetSchemaOut(), out_file_name, projection);
     } else {
         cout << "unsupported operator was provided" << endl;
         exit(-1);
@@ -118,16 +118,28 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 }
 
 Project* QueryCompiler::CreateProjection(NameList& _attsToSelect, Join& _root_join) {
+
+    vector<int> attr_names;
+    int no_attr_out = 0;
+    Schema join_schema = _root_join.GetSchemaOut();
+
     NameList* current_attr = &_attsToSelect;
-    int no_attr_in = 0, no_attr_out = 0;
     while (current_attr) {
         no_attr_out++;
+        string attr_name = current_attr->name;
+        int att_idx = join_schema.Index(attr_name);
+        if (att_idx == -1) {
+            cout << "Attribute wasn't found in projection" << endl;
+            exit(-1);
+        }
+
+        attr_names.emplace_back(att_idx);
         current_attr = current_attr->next;
     }
     if (no_attr_out > 0) {
-        int *att_indices[no_attr_out];
-        Schema projection_schema;
-        Project *projection = new Project(_root_join.GetSchemaOut(), projection_schema, no_attr_in, no_attr_out, *att_indices, &_root_join);
+        Schema projection_schema(join_schema);
+        int no_attr_in = (int) join_schema.GetAtts().size();
+        Project *projection = new Project(join_schema, projection_schema, no_attr_in, no_attr_out, &attr_names[0], &_root_join);
         return projection;
     }
 }
@@ -188,14 +200,8 @@ Join* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
                 exit(-1);
             }
             string right_table_name = node_ptr->tables.back();
-            Schema right_schema;
-            catalog->GetSchema(right_table_name, right_schema);
 
             CNF joined_cnf;
-            if(joined_cnf.ExtractCNF(_predicate, previous_join->GetSchemaOut(), right_schema) == -1) {
-                cout << "failed in joined cnf function" << endl;
-                exit(-1);
-            }
 
             Keyify<string> right_table_key(right_table_name);
             int is_right_push = selectionMap.IsThere(right_table_key);
@@ -204,6 +210,11 @@ Join* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
 
             if (is_right_push) {
                 Select *right_selection = &selectionMap.Find(right_table_key);
+                Schema right_schema = right_selection->GetSchemaOut();
+                if(joined_cnf.ExtractCNF(_predicate, previous_join->GetSchemaOut(), right_schema) == -1) {
+                    cout << "failed in joined cnf function" << endl;
+                    exit(-1);
+                }
                 Join *new_join = new Join(previous_join->GetSchemaOut(), right_schema, joined_schema, joined_cnf, previous_join, right_selection);
                 return new_join;
             } else {
@@ -212,6 +223,11 @@ Join* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
                     exit(-1);
                 }
                 Scan *right_scan = &scanMap.Find(right_table_key);
+                Schema right_schema = right_scan->GetSchemaOut();
+                if(joined_cnf.ExtractCNF(_predicate, previous_join->GetSchemaOut(), right_schema) == -1) {
+                    cout << "failed in joined cnf function" << endl;
+                    exit(-1);
+                }
                 Join *new_join = new Join(previous_join->GetSchemaOut(), right_schema, joined_schema, joined_cnf, previous_join, right_scan);
                 return new_join;
             }
@@ -225,16 +241,6 @@ Join* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
         string left_table_name = node_ptr->tables[0];
         string right_table_name = node_ptr->tables[1];
 
-        Schema left_schema, right_schema;
-        catalog->GetSchema(left_table_name, left_schema);
-        catalog->GetSchema(right_table_name, right_schema);
-
-        CNF joined_cnf;
-        if(joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) {
-            cout << "failed in joined cnf function" << endl;
-            exit(-1);
-        }
-
         Keyify<string> left_table_key(left_table_name);
         Keyify<string> right_table_key(right_table_name);
 
@@ -242,13 +248,20 @@ Join* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
         int is_right_push = selectionMap.IsThere(right_table_key);
 
         Schema joined_schema;
+        CNF joined_cnf;
 
         // base: two scan(select) to be joined
         // choosing select in case of push down, otherwise we choose scan
         if (is_left_push) {
             Select *left_selection = &selectionMap.Find(left_table_key);
+            Schema left_schema = left_selection->GetSchemaOut();
             if (is_right_push) {
                 Select *right_selection = &selectionMap.Find(right_table_key);
+                Schema right_schema = right_selection->GetSchemaOut();
+                if(joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) {
+                    cout << "failed in joined cnf function" << endl;
+                    exit(-1);
+                }
                 Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_selection, right_selection);
                 return new_join;
             } else {
@@ -257,6 +270,11 @@ Join* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
                     exit(-1);
                 }
                 Scan *right_scan = &scanMap.Find(right_table_key);
+                Schema right_schema = right_scan->GetSchemaOut();
+                if(joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) {
+                    cout << "failed in joined cnf function" << endl;
+                    exit(-1);
+                }
                 Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_selection, right_scan);
                 return new_join;
             }
@@ -266,8 +284,14 @@ Join* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
                 exit(-1);
             }
             Scan *left_scan = &scanMap.Find(left_table_key);
+            Schema left_schema = left_scan->GetSchemaOut();
             if (is_right_push) {
                 Select *right_selection = &selectionMap.Find(right_table_key);
+                Schema right_schema = right_selection->GetSchemaOut();
+                if(joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) {
+                    cout << "failed in joined cnf function" << endl;
+                    exit(-1);
+                }
                 Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_scan, right_selection);
                 return new_join;
             } else {
@@ -276,6 +300,11 @@ Join* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
                     exit(-1);
                 }
                 Scan *right_scan = &scanMap.Find(right_table_key);
+                Schema right_schema = right_scan->GetSchemaOut();
+                if(joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) {
+                    cout << "failed in joined cnf function" << endl;
+                    exit(-1);
+                }
                 Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_scan, right_scan);
                 return new_join;
             }
@@ -288,7 +317,7 @@ void QueryCompiler::CreateScans(TableList& _tables) {
 	while (current_table) {
 
 		Schema schema;
-		DBFile table_file;
+		DBFile table_file; //TODO: this must be created with input arguments
 		string table_name = current_table->tableName;
 
 		catalog->GetSchema(table_name, schema);
@@ -304,67 +333,21 @@ void QueryCompiler::CreateSelects(AndList& _predicate) {
     scanMap.MoveToStart();
     while (!scanMap.AtEnd()) {
         CNF cnf;
-        Record literal; //TODO: how to get the constants?
+        Record literal;
         string table_name = scanMap.CurrentKey();
         Schema schema;
-        catalog->GetSchema(table_name, schema);
+        catalog->GetSchema(table_name, schema); //TODO: does select can start from scan's schema?
         if(cnf.ExtractCNF(_predicate, schema, literal) == -1) {
             cout << "failed in single cnf function" << endl;
             exit(-1);
         }
 
         if (cnf.numAnds > 0) {
-
-            //TODO: may need to move this logic into QueryOptimizer
-            // estimating the cardinality of a relation
-            int denominator_value = 0;
-
-            if (cnf.andList[0].operand2 == Literal) {
-                CompOperator anOperator = cnf.andList[0].op;
-                string attr_name = schema.GetAtts()[cnf.andList[0].whichAtt1].name;
-                if (anOperator == LessThan || anOperator == GreaterThan) {
-                    denominator_value = 3;
-                } else if (anOperator == Equals) {
-                    int no_distincts = schema.GetDistincts(attr_name);
-                    if (no_distincts <= 0) {
-                        cout << "Incorrect distinct value" << endl;
-                        exit(-1);
-                    }
-                    denominator_value = no_distincts;
-                } else {
-                    cout << "Unsupported operator" << endl;
-                    exit(-1);
-                }
-            }
-
-            unsigned counter = 1;
-            while (counter < cnf.numAnds) {
-                if (cnf.andList[counter].operand2 == Literal) {
-                    CompOperator anOperator = cnf.andList[counter].op;
-                    string attr_name = schema.GetAtts()[cnf.andList[counter].whichAtt1].name;
-                    if (anOperator == LessThan || anOperator == GreaterThan) {
-                        denominator_value *= 3;
-                    } else if (anOperator == Equals) {
-                        int no_distincts = schema.GetDistincts(attr_name);
-                        if (no_distincts <= 0) {
-                            cout << "Incorrect distinct value" << endl;
-                            exit(-1);
-                        }
-                        denominator_value *= no_distincts;
-                    }
-                }
-                counter++;
-            }
-
-            unsigned int cardinality = schema.GetTuplesNumber() / denominator_value;
             Scan *scan_operator = &scanMap.CurrentData();
             Select table_selection(schema, cnf, literal, scan_operator);
-            table_selection.SetEstimatedCardinality(cardinality);
-
             Keyify<string> table_key(table_name);
             selectionMap.Insert(table_key, table_selection);
         }
-
         scanMap.Advance();
     }
 }

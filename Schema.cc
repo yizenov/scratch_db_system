@@ -162,12 +162,12 @@ int Schema::Project(vector<int>& _attsToKeep) {
 	return 0;
 }
 
-void Schema::SetTuplesNumber(unsigned int &_tupleNumber) {
+void Schema::SetTuplesNumber(unsigned long int &_tupleNumber) {
 	SWAP(tuple_no, _tupleNumber);
 	isChanged = true;
 }
 
-unsigned int Schema::GetTuplesNumber() { return tuple_no; }
+unsigned long int Schema::GetTuplesNumber() { return tuple_no; }
 
 void Schema::SetTablePath(string& _tablePath) {
 	SWAP(table_path, _tablePath);

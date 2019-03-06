@@ -17,7 +17,7 @@ struct OptimizationTree {
 	// number of tuples in each of the tables (after selection predicates)
 	vector<int> tuples;
 	// number of tuples at this node
-	int noTuples;
+	unsigned long int noTuples;
 
 	// connections to children and parent
 	OptimizationTree* parent;

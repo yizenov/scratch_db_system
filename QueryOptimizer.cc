@@ -29,7 +29,7 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 	current_table = current_table->next;
 
 	//TODO: choose formula to estimate survived tuples
-	unsigned int no_tuples;
+	unsigned long int no_tuples;
 
 	OptimizationTree *left_base_tree = new OptimizationTree();
 	catalog->GetNoTuples(table_name_base, no_tuples);

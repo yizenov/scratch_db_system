@@ -64,6 +64,7 @@ int main(int argc, char *argv[]) {
       compiler.Compile(tables, attsToSelect, finalFunction, predicate, groupingAtts,
                        distinctAtts, queryTree);
 
+      //TODO: printing the tree by levels
       cout << queryTree << endl;
 
       string option;
