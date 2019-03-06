@@ -180,8 +180,8 @@ bool Schema::GetSchemaStatus() { return isChanged; }
 
 ostream& operator<<(ostream& _os, Schema& _c) {
 	_os << "number of tuples: " << _c.tuple_no;
-	_os << "; path: " << _c.table_path << endl;
-	_os << "(";
+	_os << "; path: " << _c.table_path;
+	_os << " ( " << endl;
 	for(int i=0; i<_c.atts.size(); i++) {
 		_os << _c.atts[i].name << ':';
 
@@ -203,7 +203,7 @@ ostream& operator<<(ostream& _os, Schema& _c) {
 		_os << " [" << _c.atts[i].noDistinct << "]";
 		if (i < _c.atts.size()-1) _os << ", ";
 	}
-	_os << ")";
+	_os << endl << "\t\t) " << endl;
 
 	return _os;
 }

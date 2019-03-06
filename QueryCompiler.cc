@@ -55,9 +55,9 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
     if (_groupingAtts) { // group-by operator
         group_by_operator = CreateGroupBy(*_groupingAtts, *root_join);
         // TODO: distinct happens here automatically?
-        if (_finalFunction) { // sum operator
-            sum_operator = CreateAggregators(*_finalFunction, *root_join);
-        }
+//        if (_finalFunction) { // sum operator
+//            sum_operator = CreateAggregators(*_finalFunction, *root_join);
+//        }
         group_by_check = true;
     } else if (_finalFunction) { // sum operator
         sum_operator = CreateAggregators(*_finalFunction, *root_join);
@@ -301,7 +301,7 @@ Join* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
                 }
                 Scan *right_scan = &scanMap.Find(right_table_key);
                 Schema right_schema = right_scan->GetSchemaOut();
-                if(joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) {
+                if(joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) { //TODO: fails when there is no join 7.sql
                     cout << "failed in joined cnf function" << endl;
                     exit(-1);
                 }
@@ -342,12 +342,12 @@ void QueryCompiler::CreateSelects(AndList& _predicate) {
             exit(-1);
         }
 
-        if (cnf.numAnds > 0) {
+        //if (cnf.numAnds > 0) {
             Scan *scan_operator = &scanMap.CurrentData();
             Select table_selection(schema, cnf, literal, scan_operator);
             Keyify<string> table_key(table_name);
             selectionMap.Insert(table_key, table_selection);
-        }
+        //}
         scanMap.Advance();
     }
 }

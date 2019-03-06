@@ -12,8 +12,7 @@ Scan::Scan(Schema& _schema, DBFile& _file) : schema(_schema), file(_file) {}
 Scan::~Scan() {}
 
 ostream& Scan::print(ostream& _os) {
-    _os << schema << endl;
-    return _os << "SCAN";
+    return _os << "SCAN [ number of tuples: "<< schema.GetTuplesNumber() << " (end of scan operator) ]" << endl;
 }
 
 void Scan::Swap(Scan &_other) {
@@ -26,58 +25,58 @@ Select::Select(Schema& _schema, CNF& _predicate, Record& _constants,
 	RelationalOp* _producer) : schema(_schema), predicate(_predicate),
 	constants(_constants), producer(_producer) {
 
-    // estimating the cardinality of a relation
-    int denominator_value = 0;
+    if (predicate.numAnds > 0) {
 
-    if (_predicate.andList[0].operand2 == Literal) {
-        CompOperator anOperator = _predicate.andList[0].op;
-        string attr_name = schema.GetAtts()[_predicate.andList[0].whichAtt1].name;
-        if (anOperator == LessThan || anOperator == GreaterThan) {
-            denominator_value = 3;
-        } else if (anOperator == Equals) {
-            int no_distincts = schema.GetDistincts(attr_name);
-            if (no_distincts <= 0) {
-                cout << "Incorrect distinct value" << endl;
-                exit(-1);
-            }
-            denominator_value = no_distincts;
-        } else {
-            cout << "Unsupported operator" << endl;
-            exit(-1);
-        }
-    }
+        // estimating the cardinality of a relation
+        int denominator_value = 0;
 
-    unsigned counter = 1;
-    while (counter < _predicate.numAnds) {
-        if (_predicate.andList[counter].operand2 == Literal) {
-            CompOperator anOperator = _predicate.andList[counter].op;
-            string attr_name = schema.GetAtts()[_predicate.andList[counter].whichAtt1].name;
+        if (_predicate.andList[0].operand2 == Literal) {
+            CompOperator anOperator = _predicate.andList[0].op;
+            string attr_name = schema.GetAtts()[_predicate.andList[0].whichAtt1].name;
             if (anOperator == LessThan || anOperator == GreaterThan) {
-                denominator_value *= 3;
+                denominator_value = 3;
             } else if (anOperator == Equals) {
                 int no_distincts = schema.GetDistincts(attr_name);
                 if (no_distincts <= 0) {
                     cout << "Incorrect distinct value" << endl;
                     exit(-1);
                 }
-                denominator_value *= no_distincts;
+                denominator_value = no_distincts;
+            } else {
+                cout << "Unsupported operator" << endl;
+                exit(-1);
             }
         }
-        counter++;
-    }
 
-    unsigned long int cardinality = schema.GetTuplesNumber() / denominator_value;
-    schema.SetTuplesNumber(cardinality);
+        unsigned counter = 1;
+        while (counter < _predicate.numAnds) {
+            if (_predicate.andList[counter].operand2 == Literal) {
+                CompOperator anOperator = _predicate.andList[counter].op;
+                string attr_name = schema.GetAtts()[_predicate.andList[counter].whichAtt1].name;
+                if (anOperator == LessThan || anOperator == GreaterThan) {
+                    denominator_value *= 3;
+                } else if (anOperator == Equals) {
+                    int no_distincts = schema.GetDistincts(attr_name);
+                    if (no_distincts <= 0) {
+                        cout << "Incorrect distinct value" << endl;
+                        exit(-1);
+                    }
+                    denominator_value *= no_distincts;
+                }
+            }
+            counter++;
+        }
+
+        unsigned long int cardinality = schema.GetTuplesNumber() / denominator_value;
+        schema.SetTuplesNumber(cardinality);
+    }
 }
 
 Select::~Select() {}
 
 ostream& Select::print(ostream& _os) {
-    _os << producer << endl;
-    _os << schema << endl;
-    _os << predicate << endl;
-    constants.print(_os, schema);
-	return _os << "SELECT";
+    _os << "SELECT [ estimated cardinality: " << schema.GetTuplesNumber() << " ]" << endl;
+	return _os << "\t\t\t\t\t[ " << *producer << "\t\t\t\t(end of selection operator) ]" << endl;
 }
 
 void Select::Swap(Select &_other) {
@@ -104,10 +103,12 @@ Project::Project(Schema& _schemaIn, Schema& _schemaOut, int _numAttsInput,
 Project::~Project() {}
 
 ostream& Project::print(ostream& _os) {
-    _os << producer << endl;
-    _os << schemaIn << endl;
-    _os << schemaOut << endl;
-	return _os << "PROJECT";
+    _os << "PROJECT [ projected attributes:";
+    for (Attribute attr : schemaOut.GetAtts()) {
+        cout << " " + attr.name;
+    }
+    _os << " ]" << endl;
+	return _os << "\t\t\t[ " << *producer << "\t\t\t(end of projection operator) ]" << endl;
 }
 
 void Project::Swap(Project &_other) {
@@ -138,6 +139,7 @@ Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
     Target operand1 = comparison.operand1, operand2 = comparison.operand2;
     int no_distinct1 = 0, no_distinct2 = 0;
 
+    // the order of left and right distinct values don't matter
     int attr_idx1 = comparison.whichAtt1;
     if (operand1 == Left) {
         string left_attr_name = schemaLeft.GetAtts()[attr_idx1].name;
@@ -176,13 +178,11 @@ Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
 Join::~Join() {}
 
 ostream& Join::print(ostream& _os) {
-    _os << left << endl;
-    _os << right << endl;
-    _os << schemaLeft << endl;
-    _os << schemaRight << endl;
-    _os << schemaOut << endl;
-    _os << predicate << endl;
-	return _os << "JOIN";
+    _os << "JOIN (left-deep tree) estimated join size: " << schemaOut.GetTuplesNumber() << endl;
+    _os << "\t\t\t\t[ " << *left;
+    _os << "\t\t\t --- join -- " << endl;
+    _os << "\t\t\t\t" << *right;
+	return _os << "\t\t\t(end of join operator) ]" << endl;
 }
 
 void Join::Swap(Join &_other) {
@@ -197,14 +197,14 @@ void Join::Swap(Join &_other) {
 DuplicateRemoval::DuplicateRemoval(Schema& _schema, RelationalOp* _producer) :
     schema(_schema), producer(_producer) {
     //TODO: get the distinct values only
+    //TODO: get attr name
 }
 
 DuplicateRemoval::~DuplicateRemoval() {}
 
 ostream& DuplicateRemoval::print(ostream& _os) {
-    _os << producer << endl;
-    _os << schema << endl;
-	return _os << "DISTINCT";
+    _os << "DISTINCT [ attribute name: " << "??" << " ]" << endl;
+    return _os << "\t\t\t[ " << *producer << "\t\t(end of distinct operator) ]" << endl;
 }
 
 void DuplicateRemoval::Swap(DuplicateRemoval &_other) {
@@ -214,12 +214,15 @@ void DuplicateRemoval::Swap(DuplicateRemoval &_other) {
 }
 
 Sum::Sum(Schema& _schemaIn, Schema& _schemaOut, Function& _compute, RelationalOp* _producer) :
-    schemaIn(_schemaIn), schemaOut(_schemaOut), compute(_compute), producer(_producer) {}
+    schemaIn(_schemaIn), schemaOut(_schemaOut), compute(_compute), producer(_producer) {
+    //TODO: how do we compute a single value?
+}
 
 Sum::~Sum() {}
 
 ostream& Sum::print(ostream& _os) {
-	return _os << "SUM";
+    _os << "SUM [ value of sum: " << sum_value << " ]" << endl;
+    return _os << "\t\t\t[ " << *producer << "\t\t(end of sum operator) ]" << endl;
 }
 
 void Sum::Swap(Sum &_other) {
@@ -232,12 +235,15 @@ void Sum::Swap(Sum &_other) {
 
 GroupBy::GroupBy(Schema& _schemaIn, Schema& _schemaOut, OrderMaker& _groupingAtts, Function& _compute,
     RelationalOp* _producer) : schemaIn(_schemaIn), schemaOut(_schemaOut), groupingAtts(_groupingAtts),
-    compute(_compute), producer(_producer) {}
+    compute(_compute), producer(_producer) {
+    //TODO: how do we compute this?
+}
 
 GroupBy::~GroupBy() {}
 
 ostream& GroupBy::print(ostream& _os) {
-	return _os << "GROUP BY";
+    _os << "GROUP BY [ " << groupingAtts << " ]" << endl;
+    return _os << "\t\t\t[ " << *producer << "\t\t(end of group-by operator) ]" << endl;
 }
 
 void GroupBy::Swap(GroupBy &_other) {
@@ -250,15 +256,17 @@ void GroupBy::Swap(GroupBy &_other) {
 }
 
 WriteOut::WriteOut(Schema& _schema, string& _outFile, RelationalOp* _producer) :
-    schema(_schema), outFile(_outFile), producer(_producer) {}
+    schema(_schema), outFile(_outFile), producer(_producer) {
+    // next phase: open the file
+}
 
-WriteOut::~WriteOut() {}
+WriteOut::~WriteOut() {
+    // next phase: close the file
+}
 
 ostream& WriteOut::print(ostream& _os) {
-    _os << producer << endl;
-    _os << schema << endl;
-    _os << "file name: " << outFile << endl;
-	return _os << "OUTPUT";
+    _os << "WRITE OUT [ output file location: " << outFile  << " ]" << endl;
+	return _os << "\t\t[ " << *producer << "\t(end of write-out operator) ]" << endl;
 }
 
 void WriteOut::Swap(WriteOut &_other) {
@@ -274,6 +282,5 @@ void QueryExecutionTree::SetRoot(RelationalOp& _root) {
 }
 
 ostream& operator<<(ostream& _os, QueryExecutionTree& _op) {
-    _op.root->print(_os);
-	return _os << "QUERY EXECUTION TREE";
+	return _os << "QUERY EXECUTION TREE" << endl << "\t[ " << *_op.root << " (end of execution tree) ]" << endl;
 }

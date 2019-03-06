@@ -185,6 +185,8 @@ private:
 	// schema of records output by operator
 	Schema schemaOut;
 
+	double sum_value; //TODO: is it correct?
+
 	// function to compute
 	Function compute;
 
