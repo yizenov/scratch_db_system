@@ -38,42 +38,65 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	OptimizationTree *root = new OptimizationTree();
 	optimizer->Optimize(_tables, _predicate, root);
 
-	// create join operators based on the optimal order computed by the optimizer
-	Join *root_join = CreateJoins(*root, *_predicate);
-    //TODO: there may not be any join predicate
-
-	// create the remaining operators based on the query
+    // create the remaining operators based on the query
+    //TODO: create instances in heap and conver the functions to void
     GroupBy *group_by_operator;
     Sum *sum_operator;
     Project *projection;
     DuplicateRemoval *distinct_operator;
+    Join *root_join;
 
-    // group-by operator
-    if (_groupingAtts) {
-        //TODO: group by goes before projection?
+    //indicators
+    bool group_by_check = false, sum_check = false, distinct_check = false, project_check = false;
+
+	// create join operators based on the optimal order computed by the optimizer
+    root_join = CreateJoins(*root, *_predicate);
+
+    if (_groupingAtts) { // group-by operator
         group_by_operator = CreateGroupBy(*_groupingAtts, *root_join);
-    }
-
-    // projection operator
-	if (_attsToSelect) {
+        // TODO: distinct happens here automatically?
+        if (_finalFunction) { // sum operator
+            sum_operator = CreateAggregators(*_finalFunction, *root_join);
+        }
+        group_by_check = true;
+    } else if (_finalFunction) { // sum operator
+        sum_operator = CreateAggregators(*_finalFunction, *root_join);
+        sum_check = true;
+    } else if (_attsToSelect) { // projection operator
         projection = CreateProjection(*_attsToSelect, *root_join);
-
-        // distinct operator
-        if (_distinctAtts && projection->GetNumAttsOutput() > 0) {
-            distinct_operator = new DuplicateRemoval(projection->GetSchemaOut(), projection); //TODO: is it used further?
+        project_check = true;
+        if (_distinctAtts && projection->GetNumAttsOutput() > 0) { // distinct operator
+            distinct_operator = new DuplicateRemoval(projection->GetSchemaOut(), projection);
+            distinct_check = true;
         }
     }
+    //TODO: WriteOut is used after the actual execution
+    string out_file_name = "out file path";
+    WriteOut *write_out;
 
-    // sum operator
-    if (_finalFunction) {
-        //TODO: when is this executed?
-        sum_operator = CreateAggregators(*_finalFunction, *root_join);
+    Schema write_schema;
+    string schema_out_file_name = "schema out file name";
+    write_schema.SetTablePath(schema_out_file_name);
+    //TODO: new schema or schema of the producer?
+
+    if (group_by_check) {
+        write_out = new WriteOut(write_schema, out_file_name, group_by_operator);
+    } else if (sum_check) {
+        write_out = new WriteOut(write_schema, out_file_name, sum_operator);
+    } else if (distinct_check) {
+        write_out = new WriteOut(write_schema, out_file_name, distinct_operator);
+    } else if (project_check) {
+        write_out = new WriteOut(write_schema, out_file_name, projection);
+    } else {
+        cout << "unsupported operator was provided" << endl;
+        exit(-1);
     }
 
 	// connect everything in the query execution tree and return
-	BuildExecutionTree(_queryTree, *root_join, *group_by_operator, *sum_operator, *projection, *distinct_operator);
-
-	//TODO: WriteOut is used after the actual execution
+    QueryExecutionTree *queryTree = new QueryExecutionTree();
+    //TODO: check for nulls, reset the root of QueryExecutionTree
+    queryTree->SetRoot(*write_out);
+    _queryTree = *queryTree;
 
 	// free the memory occupied by the parse tree since it is not necessary anymore
 	delete _tables;
@@ -92,12 +115,6 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	//delete root_join;
 	//selectionMap.Clear();
 	//scanMap.Clear();
-}
-
-void QueryCompiler::BuildExecutionTree(QueryExecutionTree& _queryTree, Join& _root_join, GroupBy &group_by_operator,
-                                       Sum &sum_operator, Project &projection, DuplicateRemoval &distinct_operator) {
-    //TODO: connect join_tree -> group_by/sum -> projection -> distinct
-    //TODO: check for nulls, reset the root of QueryExecutionTree
 }
 
 Project* QueryCompiler::CreateProjection(NameList& _attsToSelect, Join& _root_join) {

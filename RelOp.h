@@ -260,7 +260,7 @@ public:
 	virtual ~QueryExecutionTree() {}
 
 	void ExecuteQuery() {}
-	void SetRoot(RelationalOp& _root) { root = &_root; } //TODO: assign operator is not impl.
+	void SetRoot(RelationalOp& _root);
 
     friend ostream& operator<<(ostream& _os, QueryExecutionTree& _op);
 };

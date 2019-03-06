@@ -19,6 +19,8 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 	OptimizationTree* _root) {
 	// compute the optimal join order
 
+	//TODO: in case of single table, no join happens
+
 	//TODO: assumptions: left-deep tree, no optimization so far, no push-down
 
 	TableList* current_table = _tables;

@@ -161,6 +161,7 @@ WriteOut::WriteOut(Schema& _schema, string& _outFile, RelationalOp* _producer) :
 WriteOut::~WriteOut() {}
 
 ostream& WriteOut::print(ostream& _os) {
+    _os << outFile << endl;
 	return _os << "OUTPUT";
 }
 
@@ -171,6 +172,12 @@ void WriteOut::Swap(WriteOut &_other) {
     SWAP(producer, _other.producer);
 }
 
+void QueryExecutionTree::SetRoot(RelationalOp& _root) {
+    root = &_root;
+    //TODO: assign operator may not be impl.
+}
+
 ostream& operator<<(ostream& _os, QueryExecutionTree& _op) {
+    _op.root->print(_os);
 	return _os << "QUERY EXECUTION TREE";
 }
