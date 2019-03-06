@@ -39,9 +39,9 @@ public:
     void CreateScans(TableList& _tables);
     void CreateSelects(AndList& _predicate);
     Join* CreateJoins(OptimizationTree& _root, AndList& _predicate);
-    Project* CreateProjection(NameList& _attsToSelec, Join& _root_join);
+    Project* CreateProjection(NameList& _attsToSelec, RelationalOp& _producer);
     Sum* CreateAggregators(FuncOperator& _finalFunction, RelationalOp& _producer);
-    GroupBy* CreateGroupBy(NameList& _groupingAtts, Join& _root_join);
+    GroupBy* CreateGroupBy(NameList& _groupingAtts, RelationalOp& _producer);
 };
 
 #endif // _QUERY_COMPILER_H

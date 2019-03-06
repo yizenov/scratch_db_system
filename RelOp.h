@@ -28,6 +28,7 @@ public:
 	virtual bool GetNext(Record& _record) = 0;
 
 	void Swap(RelationalOp& _other);
+	virtual Schema& GetSchemaOut() = 0;
 
 	/* Virtual function for polymorphic printing using operator<<.
 	 * Each operator has to implement its specific version of print.
@@ -56,7 +57,7 @@ public:
 
 	virtual bool GetNext(Record& _record) {}
 
-    Schema& GetSchemaOut() { return schema; }
+	Schema& GetSchemaOut() { return schema; }
 
 	void Swap(Scan& _other);
 
@@ -84,7 +85,7 @@ public:
 
 	virtual bool GetNext(Record& _record) {}
 
-    Schema& GetSchemaOut() { return schema; }
+	Schema& GetSchemaOut() { return schema; }
 
 	virtual void Swap(Select& _other);
 

@@ -34,9 +34,18 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	// push-down selections: create a SELECT operator wherever necessary
     CreateSelects(*_predicate);
 
+    //indicators
+    bool join_check = false, group_by_check = false, sum_check = false, distinct_check = false, project_check = false;
+
 	// call the optimizer to compute the join order
-	OptimizationTree *root = new OptimizationTree();
-	optimizer->Optimize(_tables, _predicate, root);
+	OptimizationTree *root;
+	if (scanMap.Length() < 1) {
+	    cout << "no input tables provided" << endl;
+	} else if (scanMap.Length() > 1) {
+        root = new OptimizationTree();
+        optimizer->Optimize(_tables, _predicate, root);
+        join_check = true;
+    }
 
     // create the remaining operators based on the query
     //TODO: create instances in heap and convert the functions to void
@@ -46,30 +55,71 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
     DuplicateRemoval *distinct_operator;
     Join *root_join;
 
-    //indicators
-    bool group_by_check = false, sum_check = false, distinct_check = false, project_check = false;
-
 	// create join operators based on the optimal order computed by the optimizer
-    root_join = CreateJoins(*root, *_predicate);
+	if (join_check) {
+        root_join = CreateJoins(*root, *_predicate);
+    }
 
     if (_groupingAtts) { // group-by operator
-        group_by_operator = CreateGroupBy(*_groupingAtts, *root_join);
-        // TODO: distinct happens here automatically?
-//        if (_finalFunction) { // sum operator
-//            sum_operator = CreateAggregators(*_finalFunction, *root_join);
-//        }
-        group_by_check = true;
+        if (join_check) {
+            group_by_operator = CreateGroupBy(*_groupingAtts, *root_join);
+            group_by_check = true;
+        } else if (selectionMap.Length() == 1) {
+            Select single_selection = selectionMap.CurrentData();
+            group_by_operator = CreateGroupBy(*_groupingAtts, single_selection);
+            group_by_check = true;
+        } else if (scanMap.Length() == 1) {
+            Scan single_scan = scanMap.CurrentData();
+            group_by_operator = CreateGroupBy(*_groupingAtts, single_scan);
+            group_by_check = true;
+        } else {
+            cout << "incorrect parent operator for group-by" << endl;
+            exit(-1);
+        }
+        // TODO: distinct and sum happen here automatically?
     } else if (_finalFunction) { // sum operator
-        sum_operator = CreateAggregators(*_finalFunction, *root_join);
-        sum_check = true;
+        if (join_check) {
+            sum_operator = CreateAggregators(*_finalFunction, *root_join);
+            sum_check = true;
+        } else if (selectionMap.Length() == 1) {
+            Select single_selection = selectionMap.CurrentData();
+            sum_operator = CreateAggregators(*_finalFunction, single_selection);
+            sum_check = true;
+        } else if (scanMap.Length() == 1) {
+            Scan single_scan = scanMap.CurrentData();
+            sum_operator = CreateAggregators(*_finalFunction, single_scan);
+            sum_check = true;
+        } else {
+            cout << "incorrect parent operator for sum aggregationn" << endl;
+            exit(-1);
+        }
+        //TODO: handle project+agg queries
     } else if (_attsToSelect) { // projection operator
-        projection = CreateProjection(*_attsToSelect, *root_join);
-        project_check = true;
+        if (join_check) {
+            projection = CreateProjection(*_attsToSelect, *root_join);
+            project_check = true;
+        } else if (selectionMap.Length() == 1) {
+            Select single_selection = selectionMap.CurrentData();
+            projection = CreateProjection(*_attsToSelect, single_selection);
+            project_check = true;
+        } else if (scanMap.Length() == 1) {
+            Scan single_scan = scanMap.CurrentData();
+            projection = CreateProjection(*_attsToSelect, single_scan);
+            project_check = true;
+        } else {
+            cout << "incorrect parent operator for projection" << endl;
+            exit(-1);
+        }
+
         if (_distinctAtts && projection->GetNumAttsOutput() > 0) { // distinct operator
             distinct_operator = new DuplicateRemoval(projection->GetSchemaOut(), projection);
             distinct_check = true;
         }
+    } else {
+        cout << "unsupported operator was provided" << endl;
+        exit(-1);
     }
+
     //TODO: WriteOut is used after the actual execution
     string out_file_name = "out file path";
     WriteOut *write_out;
@@ -111,23 +161,23 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
     //delete projection;
     //delete sum_operator;
     //delete group_by_operator;
-	delete root; //TODO: does it delete nested struct objects in heap?
+	//delete root; //TODO: does it delete nested struct objects in heap?
 	//delete root_join;
 	//selectionMap.Clear();
 	//scanMap.Clear();
 }
 
-Project* QueryCompiler::CreateProjection(NameList& _attsToSelect, Join& _root_join) {
+Project* QueryCompiler::CreateProjection(NameList& _attsToSelect, RelationalOp& _producer) {
 
     vector<int> attr_names;
     int no_attr_out = 0;
-    Schema join_schema = _root_join.GetSchemaOut();
+    Schema producer_schema = _producer.GetSchemaOut();
 
     NameList* current_attr = &_attsToSelect;
     while (current_attr) {
         no_attr_out++;
         string attr_name = current_attr->name;
-        int att_idx = join_schema.Index(attr_name);
+        int att_idx = producer_schema.Index(attr_name);
         if (att_idx == -1) {
             cout << "Attribute wasn't found in projection" << endl;
             exit(-1);
@@ -137,11 +187,14 @@ Project* QueryCompiler::CreateProjection(NameList& _attsToSelect, Join& _root_jo
         current_attr = current_attr->next;
     }
     if (no_attr_out > 0) {
-        Schema projection_schema(join_schema);
-        int no_attr_in = (int) join_schema.GetAtts().size();
-        Project *projection = new Project(join_schema, projection_schema, no_attr_in, no_attr_out, &attr_names[0], &_root_join);
+        Schema projection_schema(producer_schema);
+        int no_attr_in = (int) producer_schema.GetAtts().size();
+        Project *projection = new Project(producer_schema, projection_schema, no_attr_in, no_attr_out, &attr_names[0], &_producer);
         return projection;
-    }
+    } else {
+        cout << "no attribute to project" << endl;
+        exit(-1);
+    };
 }
 
 Sum* QueryCompiler::CreateAggregators(FuncOperator& _finalFunction, RelationalOp& _producer) {
@@ -164,9 +217,9 @@ Sum* QueryCompiler::CreateAggregators(FuncOperator& _finalFunction, RelationalOp
     return sum_operator;
 }
 
-GroupBy* QueryCompiler::CreateGroupBy(NameList& _groupingAtts, Join& _root_join) {
+GroupBy* QueryCompiler::CreateGroupBy(NameList& _groupingAtts, RelationalOp& _producer) {
     //TODO: verify this method for correctness
-    Schema *root_schema = &_root_join.GetSchemaOut();
+    Schema *root_schema = &_producer.GetSchemaOut();
     vector<int> col_indices;
 
     NameList* current_group = &_groupingAtts;
@@ -184,7 +237,7 @@ GroupBy* QueryCompiler::CreateGroupBy(NameList& _groupingAtts, Join& _root_join)
 
     Schema group_by_schema;
     Function function; //TODO: usage?
-    GroupBy *group_by_operator = new GroupBy(*root_schema, group_by_schema, orderMaker, function, &_root_join);
+    GroupBy *group_by_operator = new GroupBy(*root_schema, group_by_schema, orderMaker, function, &_producer);
     return group_by_operator;
 }
 

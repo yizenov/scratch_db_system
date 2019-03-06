@@ -36,7 +36,11 @@ Schema::Schema(vector<string>& _attributes,	vector<string>& _attributeTypes,
 		if (_attributeTypes[i] == "Integer") a.type = Integer; //INTEGER
 		else if (_attributeTypes[i] == "Float") a.type = Float; //FLOAT
 		else if (_attributeTypes[i] == "String") a.type = String; //STRING
-		
+		else {
+            cout << "unsupported attribute type" << endl;
+            exit(-1);
+        }
+
 		atts.push_back(a);
 	}
 }
