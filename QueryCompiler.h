@@ -40,7 +40,7 @@ public:
     void CreateSelects(AndList& _predicate);
     Join* CreateJoins(OptimizationTree& _root, AndList& _predicate);
     void CreateProjection(NameList& _attsToSelec, RelationalOp& _producer, Project *_projection);
-    Sum* CreateAggregators(FuncOperator& _finalFunction, RelationalOp& _producer);
+    void CreateAggregators(FuncOperator& _finalFunction, RelationalOp& _producer, Sum *_sum);
     GroupBy* CreateGroupBy(NameList& _groupingAtts, RelationalOp& _producer);
 };
 

@@ -206,6 +206,7 @@ public:
 	void Swap(Sum& _other);
 
     Schema& GetSchemaOut() { return schemaOut; }
+    void SetProducer(RelationalOp* _producer) { producer = _producer; }
 
 	virtual ostream& print(ostream& _os);
 };
