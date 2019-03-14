@@ -179,9 +179,9 @@ Join::~Join() {}
 
 ostream& Join::print(ostream& _os) {
     _os << "JOIN (left-deep tree) estimated join size: " << schemaOut.GetTuplesNumber() << endl;
-    _os << "\t\t\t\t[ " << *left;
+    _os << "\t\t\t[ " << *left;
     _os << "\t\t\t --- join -- " << endl;
-    _os << "\t\t\t\t" << *right;
+    _os << "\t\t\t" << *right;
 	return _os << "\t\t\t(end of join operator) ]" << endl;
 }
 

@@ -79,6 +79,8 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
     } else if (_finalFunction) { // sum operator
         if (join_check) {
             CreateAggregators(*_finalFunction, *pre_out_operator, sum);
+            sum->SetProducer(pre_out_operator);
+            pre_out_operator = sum;
         } else if (selectionMap.Length() == 1) {
             single_selection = &selectionMap.CurrentData();
             //CreateAggregators(*_finalFunction, *single_selection, sum);
@@ -192,30 +194,7 @@ void QueryCompiler::CreateAggregators(FuncOperator& _finalFunction, RelationalOp
     Function function;
     Schema schema, agg_schema;
     schema = _producer.GetSchemaOut();
-//    string attr_name;
-//
-//    //TODO: assuming attribute names may come only from the same table
-//    if (_finalFunction.leftOperand) {
-//       attr_name = _finalFunction.leftOperand->value; //TODO: this is attr name, how to get the table name?
-//    } else if (_finalFunction.leftOperator) {
-//        attr_name = _finalFunction.leftOperator->leftOperand->value;
-//    } else if (_finalFunction.right) {
-//        attr_name = _finalFunction.right->leftOperand->value;
-//    } else {
-//        cout << "incorrect argument for sum operator" << endl;
-//        exit(-1);
-//    };
-//
-//
-//    //TODO: this part has to be implemented without iteration over the all tables
-//    // assumption: attribute name belongs to one table only
-//    vector<string> tables;
-//    catalog->GetTables(tables);
-//    for (string table : tables) {
-//        catalog->GetSchema(table, schema);
-//        if (schema.Index(attr_name) != -1)
-//            break;
-//    }
+
     function.GrowFromParseTree(&_finalFunction, schema);
     _sum = new Sum(schema, schema, function, &_producer); //TODO: do insert the join or projection?
 }
@@ -244,125 +223,125 @@ GroupBy* QueryCompiler::CreateGroupBy(NameList& _groupingAtts, RelationalOp& _pr
     return group_by_operator;
 }
 
-Join* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
+RelationalOp* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _predicate) {
     OptimizationTree* node_ptr = &_root;
     while (node_ptr) {
 
-        if(node_ptr->leftChild->leftChild && node_ptr->leftChild->rightChild) {
-            Join *previous_join = CreateJoins(*node_ptr->leftChild, _predicate);
-
-            if (node_ptr->tables.empty()) {
-                cout << "right table is missing" << endl;
-                exit(-1);
-            }
-            string right_table_name = node_ptr->tables.back();
-
-            CNF joined_cnf;
-
-            Keyify<string> right_table_key(right_table_name);
-            int is_right_push = selectionMap.IsThere(right_table_key);
-
-            Schema joined_schema;
-
-            if (is_right_push) {
-                Select *right_selection = &selectionMap.Find(right_table_key);
-                Schema right_schema = right_selection->GetSchemaOut();
-                if(joined_cnf.ExtractCNF(_predicate, previous_join->GetSchemaOut(), right_schema) == -1) {
-                    cout << "failed in joined cnf function" << endl;
-                    exit(-1);
-                }
-                Join *new_join = new Join(previous_join->GetSchemaOut(), right_schema, joined_schema, joined_cnf, previous_join, right_selection);
-                return new_join;
-            } else {
-                if (!scanMap.IsThere(right_table_key)) {
-                    cout << "right table has either scan or select" << endl;
-                    exit(-1);
-                }
-                Scan *right_scan = &scanMap.Find(right_table_key);
-                Schema right_schema = right_scan->GetSchemaOut();
-                if(joined_cnf.ExtractCNF(_predicate, previous_join->GetSchemaOut(), right_schema) == -1) {
-                    cout << "failed in joined cnf function" << endl;
-                    exit(-1);
-                }
-                Join *new_join = new Join(previous_join->GetSchemaOut(), right_schema, joined_schema, joined_cnf, previous_join, right_scan);
-                return new_join;
-            }
+        RelationalOp *left_tree = NULL, *right_tree = NULL;
+        if(node_ptr->leftChild) {
+            left_tree = CreateJoins(*node_ptr->leftChild, _predicate);
         }
 
-        if (node_ptr->tables.size() != 2) {
+        if(node_ptr->rightChild) {
+            right_tree = CreateJoins(*node_ptr->rightChild, _predicate);
+        }
+
+        if(left_tree && right_tree) {
+
+            CNF joined_cnf;
+            Schema joined_schema;
+
+            if(joined_cnf.ExtractCNF(_predicate, left_tree->GetSchemaOut(), right_tree->GetSchemaOut()) == -1) {
+                cout << "failed in joined cnf function" << endl;
+                exit(-1);
+            }
+            Join *new_join = new Join(left_tree->GetSchemaOut(), right_tree->GetSchemaOut(), joined_schema, joined_cnf, left_tree, right_tree);
+            return new_join;
+
+        }
+
+        if (node_ptr->tables.size() > 2 || node_ptr->tables.size() < 1) {
             cout << "wrong join structure" << endl;
             exit(-1);
         }
 
-        string left_table_name = node_ptr->tables[0];
-        string right_table_name = node_ptr->tables[1];
-
-        Keyify<string> left_table_key(left_table_name);
-        Keyify<string> right_table_key(right_table_name);
-
-        int is_left_push = selectionMap.IsThere(left_table_key);
-        int is_right_push = selectionMap.IsThere(right_table_key);
-
-        Schema joined_schema;
-        CNF joined_cnf;
-
-        // base: two scan(select) to be joined
-        // choosing select in case of push down, otherwise we choose scan
-        if (is_left_push) {
-            Select *left_selection = &selectionMap.Find(left_table_key);
-            Schema left_schema = left_selection->GetSchemaOut();
-            if (is_right_push) {
-                Select *right_selection = &selectionMap.Find(right_table_key);
-                Schema right_schema = right_selection->GetSchemaOut();
-                if(joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) {
-                    cout << "failed in joined cnf function" << endl;
-                    exit(-1);
-                }
-                Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_selection, right_selection);
-                return new_join;
+        if (node_ptr->tables.size() == 1) {
+            string table_name = node_ptr->tables[0];
+            Keyify<string> table_key(table_name);
+            int is_push = selectionMap.IsThere(table_key);
+            if (is_push) {
+                Select *selection = &selectionMap.Find(table_key);
+                return selection;
             } else {
-                if (!scanMap.IsThere(right_table_key)) {
-                    cout << "right table has either scan or select" << endl;
+                if (!scanMap.IsThere(table_key)) {
+                    cout << "table doesn't have either scan or select" << endl;
                     exit(-1);
                 }
-                Scan *right_scan = &scanMap.Find(right_table_key);
-                Schema right_schema = right_scan->GetSchemaOut();
-                if(joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) {
-                    cout << "failed in joined cnf function" << endl;
-                    exit(-1);
-                }
-                Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_selection, right_scan);
-                return new_join;
+                Scan *scan = &scanMap.Find(table_key);
+                return scan;
             }
         } else {
-            if (!scanMap.IsThere(left_table_key)) {
-                cout << "left table has either scan or select" << endl;
-                exit(-1);
-            }
-            Scan *left_scan = &scanMap.Find(left_table_key);
-            Schema left_schema = left_scan->GetSchemaOut();
-            if (is_right_push) {
-                Select *right_selection = &selectionMap.Find(right_table_key);
-                Schema right_schema = right_selection->GetSchemaOut();
-                if(joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) {
-                    cout << "failed in joined cnf function" << endl;
-                    exit(-1);
+
+            string left_table_name = node_ptr->tables[0];
+            string right_table_name = node_ptr->tables[1];
+
+            Keyify<string> left_table_key(left_table_name);
+            Keyify<string> right_table_key(right_table_name);
+
+            int is_left_push = selectionMap.IsThere(left_table_key);
+            int is_right_push = selectionMap.IsThere(right_table_key);
+
+            Schema joined_schema;
+            CNF joined_cnf;
+
+            // base: two scan(select) to be joined
+            // choosing select in case of push down, otherwise we choose scan
+            if (is_left_push) {
+                Select *left_selection = &selectionMap.Find(left_table_key);
+                Schema left_schema = left_selection->GetSchemaOut();
+                if (is_right_push) {
+                    Select *right_selection = &selectionMap.Find(right_table_key);
+                    Schema right_schema = right_selection->GetSchemaOut();
+                    if (joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) {
+                        cout << "failed in joined cnf function" << endl;
+                        exit(-1);
+                    }
+                    Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_selection, right_selection);
+                    return new_join;
+                } else {
+                    if (!scanMap.IsThere(right_table_key)) {
+                        cout << "right table doesn't have either scan or select" << endl;
+                        exit(-1);
+                    }
+                    Scan *right_scan = &scanMap.Find(right_table_key);
+                    Schema right_schema = right_scan->GetSchemaOut();
+                    if (joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) {
+                        cout << "failed in joined cnf function" << endl;
+                        exit(-1);
+                    }
+                    Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_selection, right_scan);
+                    return new_join;
                 }
-                Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_scan, right_selection);
-                return new_join;
             } else {
-                if (!scanMap.IsThere(right_table_key)) {
-                    cout << "right table has either scan or select" << endl;
+                if (!scanMap.IsThere(left_table_key)) {
+                    cout << "left table doesn't have either scan or select" << endl;
                     exit(-1);
                 }
-                Scan *right_scan = &scanMap.Find(right_table_key);
-                Schema right_schema = right_scan->GetSchemaOut();
-                if(joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) { //TODO: fails when there is no join 7.sql
-                    cout << "failed in joined cnf function" << endl;
-                    exit(-1);
+                Scan *left_scan = &scanMap.Find(left_table_key);
+                Schema left_schema = left_scan->GetSchemaOut();
+                if (is_right_push) {
+                    Select *right_selection = &selectionMap.Find(right_table_key);
+                    Schema right_schema = right_selection->GetSchemaOut();
+                    if (joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) {
+                        cout << "failed in joined cnf function" << endl;
+                        exit(-1);
+                    }
+                    Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_scan, right_selection);
+                    return new_join;
+                } else {
+                    if (!scanMap.IsThere(right_table_key)) {
+                        cout << "right table doesn't have either scan or select" << endl;
+                        exit(-1);
+                    }
+                    Scan *right_scan = &scanMap.Find(right_table_key);
+                    Schema right_schema = right_scan->GetSchemaOut();
+                    if (joined_cnf.ExtractCNF(_predicate, left_schema, right_schema) == -1) { //TODO: fails when there is no join 7.sql
+                        cout << "failed in joined cnf function" << endl;
+                        exit(-1);
+                    }
+                    Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_scan, right_scan);
+                    return new_join;
                 }
-                Join *new_join = new Join(left_schema, right_schema, joined_schema, joined_cnf, left_scan, right_scan);
-                return new_join;
             }
         }
     }
