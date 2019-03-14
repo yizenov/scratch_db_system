@@ -41,6 +41,7 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 		Schema table_schema;
 		catalog->GetSchema(table_name, table_schema);
 
+		//TODO: check for type in join predicates
 		CNF cnf;
 		Record literal;
 		if(cnf.ExtractCNF(*_predicate, table_schema, literal) == -1) {
@@ -137,6 +138,9 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
         for (int idx : indices)
             plan_key += "_" + to_string(idx);
 
+        cout << endl << "Table Names:";
+        for (string t_name : table_names)
+            cout << " " << t_name;
         cout << endl << "OPTIMAL PLAN: " << trees[plan_key] << endl;
         cout << "COST: " << dp_map[plan_key].first << endl;
         unsigned long int cardinality = schema_info[plan_key].GetTuplesNumber();

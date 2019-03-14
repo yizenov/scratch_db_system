@@ -18,6 +18,8 @@
 #include "Keyify.h"
 #include "Config.h"
 
+#include <unordered_set>
+
 
 class QueryCompiler {
 private:
@@ -39,9 +41,9 @@ public:
     void CreateScans(TableList& _tables);
     void CreateSelects(AndList& _predicate);
     RelationalOp* CreateJoins(OptimizationTree& _root, AndList& _predicate);
-    void CreateProjection(NameList& _attsToSelec, RelationalOp& _producer, Project *_projection);
-    void CreateAggregators(FuncOperator& _finalFunction, RelationalOp& _producer, Sum *_sum);
-    GroupBy* CreateGroupBy(NameList& _groupingAtts, RelationalOp& _producer);
+    void CreateProjection(NameList& _attsToSelec, RelationalOp& _producer, Project &_projection);
+    void CreateAggregators(FuncOperator& _finalFunction, RelationalOp& _producer, Sum &_sum);
+    GroupBy* CreateGroupBy(NameList& _groupingAtts, FuncOperator& _finalFunction, NameList& _attsToSelect, RelationalOp& _producer);
 };
 
 #endif // _QUERY_COMPILER_H

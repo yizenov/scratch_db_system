@@ -123,6 +123,11 @@ public:
 	 * loads catalog from the database
 	 */
 	void UploadSchemas();
+
+	/*
+	 * returns a type name as string object
+	 */
+	string GetTypeName(Type _attr_type);
 };
 
 #endif //_CATALOG_H

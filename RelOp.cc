@@ -105,7 +105,7 @@ Project::~Project() {}
 ostream& Project::print(ostream& _os) {
     _os << "PROJECT [ projected attributes:";
     for (Attribute attr : schemaOut.GetAtts()) {
-        cout << " " + attr.name;
+        _os << " " + attr.name;
     }
     _os << " ]" << endl;
 	return _os << "\t\t\t[ " << *producer << "\t\t\t(end of projection operator) ]" << endl;
@@ -205,7 +205,8 @@ DuplicateRemoval::DuplicateRemoval(Schema& _schema, RelationalOp* _producer) :
 DuplicateRemoval::~DuplicateRemoval() {}
 
 ostream& DuplicateRemoval::print(ostream& _os) {
-    _os << "DISTINCT [ attribute name: " << "??" << " ]" << endl;
+    string attr_name = schema.GetAtts()[0].name;
+    _os << "DISTINCT [ on attribute name: " << attr_name << " ]" << endl;
     return _os << "\t\t\t[ " << *producer << "\t\t(end of distinct operator) ]" << endl;
 }
 
@@ -223,7 +224,7 @@ Sum::Sum(Schema& _schemaIn, Schema& _schemaOut, Function& _compute, RelationalOp
 Sum::~Sum() {}
 
 ostream& Sum::print(ostream& _os) {
-    _os << "SUM [ value of sum: " << sum_value << " ]" << endl;
+    _os << "SUM [ value of sum" << " ]" << endl;
     return _os << "\t\t\t[ " << *producer << "\t\t(end of sum operator) ]" << endl;
 }
 

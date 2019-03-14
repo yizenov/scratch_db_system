@@ -476,3 +476,14 @@ void Catalog::UploadSchemas() {
     sqlite3_finalize(stmt);
   }
 }
+
+string Catalog::GetTypeName(Type _attr_type) {
+  if (_attr_type == Integer)
+    return "Integer";
+  else if (_attr_type == Float)
+    return "Float";
+  else if (_attr_type == String)
+    return "String";
+  else
+    return "UNKNOWN TYPE";
+}

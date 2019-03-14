@@ -64,13 +64,13 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 
     if (_groupingAtts) { // group-by operator
         if (join_check) {
-            pre_out_operator = CreateGroupBy(*_groupingAtts, *pre_out_operator);
+            pre_out_operator = CreateGroupBy(*_groupingAtts, *_finalFunction, *_attsToSelect, *pre_out_operator);
         } else if (selectionMap.Length() == 1) {
             Select single_selection = selectionMap.CurrentData();
-            pre_out_operator = CreateGroupBy(*_groupingAtts, single_selection);
+            pre_out_operator = CreateGroupBy(*_groupingAtts, *_finalFunction, *_attsToSelect, single_selection);
         } else if (scanMap.Length() == 1) {
             Scan single_scan = scanMap.CurrentData();
-            pre_out_operator = CreateGroupBy(*_groupingAtts, single_scan);
+            pre_out_operator = CreateGroupBy(*_groupingAtts, *_finalFunction, *_attsToSelect, single_scan);
         } else {
             cout << "incorrect parent operator for group-by" << endl;
             exit(-1);
@@ -78,23 +78,15 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
         // TODO: distinct and sum happen here automatically?
     } else if (_finalFunction) { // sum operator
         if (join_check) {
-            CreateAggregators(*_finalFunction, *pre_out_operator, sum);
-            sum->SetProducer(pre_out_operator);
+            CreateAggregators(*_finalFunction, *pre_out_operator, *sum);
             pre_out_operator = sum;
         } else if (selectionMap.Length() == 1) {
             single_selection = &selectionMap.CurrentData();
-            //CreateAggregators(*_finalFunction, *single_selection, sum);
-            Function function;
-            Schema schema = single_selection->GetSchemaOut();
-            function.GrowFromParseTree(_finalFunction, schema);
-            sum = new Sum(schema, schema, function, single_selection);
-
-            //sum->SetProducer(single_selection);
+            CreateAggregators(*_finalFunction, *single_selection, *sum);
             pre_out_operator = sum;
         } else if (scanMap.Length() == 1) {
             Scan single_scan = scanMap.CurrentData();
-            CreateAggregators(*_finalFunction, single_scan, sum);
-            sum->SetProducer(&single_scan);
+            CreateAggregators(*_finalFunction, single_scan, *sum);
             pre_out_operator = sum;
         } else {
             cout << "incorrect parent operator for sum aggregation" << endl;
@@ -103,18 +95,17 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
         //TODO: handle project+agg queries
     } else if (_attsToSelect) { // projection operator
         if (join_check) {
-            CreateProjection(*_attsToSelect, *pre_out_operator, projection);
+            CreateProjection(*_attsToSelect, *pre_out_operator, *projection);
+            pre_out_operator = projection;
             project_check = true;
         } else if (selectionMap.Length() == 1) {
             single_selection = &selectionMap.CurrentData();
-            CreateProjection(*_attsToSelect, *single_selection, projection);
-            projection->SetProducer(single_selection);
+            CreateProjection(*_attsToSelect, *single_selection, *projection);
             pre_out_operator = projection;
             project_check = true;
         } else if (scanMap.Length() == 1) {
             Scan single_scan = scanMap.CurrentData();
-            CreateProjection(*_attsToSelect, single_scan, projection); //TODO: check this case
-            projection->SetProducer(&single_scan);
+            CreateProjection(*_attsToSelect, single_scan, *projection);
             pre_out_operator = projection;
             project_check = true;
         } else {
@@ -160,7 +151,7 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	//scanMap.Clear();
 }
 
-void QueryCompiler::CreateProjection(NameList& _attsToSelect, RelationalOp& _producer, Project *_projection) {
+void QueryCompiler::CreateProjection(NameList& _attsToSelect, RelationalOp& _producer, Project &_projection) {
 
     vector<int> attr_names;
     int no_attr_out = 0;
@@ -183,42 +174,83 @@ void QueryCompiler::CreateProjection(NameList& _attsToSelect, RelationalOp& _pro
     if (no_attr_out > 0) {
         Schema projection_schema(producer_schema);
         int no_attr_in = (int) producer_schema.GetAtts().size();
-        _projection = new Project(producer_schema, projection_schema, no_attr_in, no_attr_out, &attr_names[0], &_producer);
+        Project project(producer_schema, projection_schema, no_attr_in, no_attr_out, &attr_names[0], &_producer);
+        _projection.Swap(project);
     } else {
         cout << "no attribute to project" << endl;
         exit(-1);
     };
 }
 
-void QueryCompiler::CreateAggregators(FuncOperator& _finalFunction, RelationalOp& _producer, Sum *_sum) {
+void QueryCompiler::CreateAggregators(FuncOperator& _finalFunction, RelationalOp& _producer, Sum &_sum) {
+
+    FuncOperator* current_agg_func = &_finalFunction;
+    if (!current_agg_func) {
+        cout << "aggregate function doesn't exist" << endl;
+        exit(-1);
+    }
     Function function;
     Schema schema, agg_schema;
     schema = _producer.GetSchemaOut();
-
-    function.GrowFromParseTree(&_finalFunction, schema);
-    _sum = new Sum(schema, schema, function, &_producer); //TODO: do insert the join or projection?
+    function.GrowFromParseTree(&_finalFunction, schema); //TODO: agg schema or producer schema?
+    Sum sum_op(schema, agg_schema, function, &_producer); //TODO: do insert the join or projection?
+    _sum.Swap(sum_op);
 }
 
-GroupBy* QueryCompiler::CreateGroupBy(NameList& _groupingAtts, RelationalOp& _producer) {
-    //TODO: verify this method for correctness
+GroupBy* QueryCompiler::CreateGroupBy(NameList& _groupingAtts, FuncOperator& _finalFunction, NameList& _attsToSelect, RelationalOp& _producer) {
+
     Schema *root_schema = &_producer.GetSchemaOut();
+
+    vector<Attribute> schema_attributes = root_schema->GetAtts();
+    unordered_set<string> existing_attributes;
+    for (Attribute attr : schema_attributes)
+        existing_attributes.insert(attr.name);
+
+    NameList* current_attr = &_attsToSelect;
+    while (current_attr) {
+        if (existing_attributes.find(current_attr->name) == existing_attributes.end()) {
+            cout << "select attribute: " << current_attr->name << " doesn't exist in the database" << endl;
+            exit(-1);
+        }
+        current_attr = current_attr->next;
+    }
+
     vector<int> col_indices;
+    vector<string> attrs, attr_types;
+    vector<unsigned int> distincts;
 
     NameList* current_group = &_groupingAtts;
     while (current_group) {
         string attr_name = current_group->name;
         int col_idx = root_schema->Index(attr_name);
-        if (col_idx == -1)
-            continue;
+        if (col_idx == -1) {
+            cout << "grouping attribute: " << attr_name << " doesn't exist in the schema" << endl;
+            exit(-1);
+        }
         col_indices.push_back(col_idx);
+        attrs.emplace_back(attr_name);
+        Type attr_type = root_schema->FindType(attr_name);
+        string type_name = catalog->GetTypeName(attr_type);
+        attr_types.emplace_back(type_name);
+        distincts.emplace_back(root_schema->GetDistincts(attr_name));
+
         current_group = current_group->next;
     }
 
-    int no_cols = (int) col_indices.size();
-    OrderMaker orderMaker(*root_schema, &col_indices[0], no_cols);
+    Schema group_by_schema(attrs, attr_types, distincts);
 
-    Schema group_by_schema;
-    Function function; //TODO: usage?
+    // group by has to have an aggregator
+    FuncOperator* current_agg_func = &_finalFunction;
+    if (!current_agg_func) {
+        cout << "aggregate function doesn't exist" << endl;
+        exit(-1);
+    }
+    Function function;
+    //function.GrowFromParseTree(&_finalFunction, group_by_schema);
+
+    int no_cols = (int) col_indices.size();
+    OrderMaker orderMaker(group_by_schema, &col_indices[0], no_cols);
+
     GroupBy *group_by_operator = new GroupBy(*root_schema, group_by_schema, orderMaker, function, &_producer);
     return group_by_operator;
 }
@@ -348,8 +380,20 @@ RelationalOp* QueryCompiler::CreateJoins(OptimizationTree& _root, AndList& _pred
 }
 
 void QueryCompiler::CreateScans(TableList& _tables) {
+
+    vector<string> db_tables;
+    catalog->GetTables(db_tables);
+    unordered_set<string> existing_tables;
+    for (string t_name : db_tables)
+        existing_tables.insert(t_name);
+
 	TableList* current_table = &_tables;
 	while (current_table) {
+
+	    if (existing_tables.find(current_table->tableName) == existing_tables.end()) {
+            cout << "table: " << current_table->tableName << " doesn't exist in the database" << endl;
+            exit(-1);
+        }
 
 		Schema schema;
 		DBFile table_file; //TODO: this must be created with input arguments
@@ -365,8 +409,10 @@ void QueryCompiler::CreateScans(TableList& _tables) {
 }
 
 void QueryCompiler::CreateSelects(AndList& _predicate) {
+
     scanMap.MoveToStart();
     while (!scanMap.AtEnd()) {
+
         CNF cnf;
         Record literal;
         string table_name = scanMap.CurrentKey();
@@ -377,12 +423,14 @@ void QueryCompiler::CreateSelects(AndList& _predicate) {
             exit(-1);
         }
 
-        //if (cnf.numAnds > 0) {
+        //TODO: check for typo in selection predicates
+
+        if (cnf.numAnds > 0) {
             Scan *scan_operator = &scanMap.CurrentData();
             Select *table_selection = new Select(schema, cnf, literal, scan_operator);
             Keyify<string> table_key(table_name);
             selectionMap.Insert(table_key, *table_selection);
-        //}
+        }
         scanMap.Advance();
     }
 }
