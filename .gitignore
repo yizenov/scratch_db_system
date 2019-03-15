@@ -12,6 +12,7 @@ catalog.sqlite-journal
 QueryLexer.c
 QueryParser.c
 QueryParser.h
+out*
 
 # User-specific stuff
 .idea/**/workspace.xml
