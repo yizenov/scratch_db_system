@@ -13,6 +13,7 @@ QueryLexer.c
 QueryParser.c
 QueryParser.h
 out*
+tpch_0_01_sf/*tbl
 
 # User-specific stuff
 .idea/**/workspace.xml

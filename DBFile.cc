@@ -10,14 +10,14 @@
 using namespace std;
 
 
-DBFile::DBFile () : fileName("") {
-}
+DBFile::DBFile () : fileName("") {}
 
 DBFile::~DBFile () {
+	file.Close();
 }
 
 DBFile::DBFile(const DBFile& _copyMe) :
-	file(_copyMe.file),	fileName(_copyMe.fileName) {}
+	file(_copyMe.file),	fileName(_copyMe.fileName), fileStatus(_copyMe.fileStatus) {}
 
 DBFile& DBFile::operator=(const DBFile& _copyMe) {
 	// handle self-assignment first
@@ -25,14 +25,49 @@ DBFile& DBFile::operator=(const DBFile& _copyMe) {
 
 	file = _copyMe.file;
 	fileName = _copyMe.fileName;
+	fileStatus = _copyMe.fileStatus;
 
 	return *this;
 }
 
+
 int DBFile::Create (char* f_path, FileType f_type) {
+
+	if (f_type != Heap) {
+		cout << "Heap files are only supported" << endl;
+		return -1;
+	}
+
+	// creating new file with zero file length
+	int status = file.Open(0, f_path);
+	if (status == 0) {
+		fileName = f_path;
+		fileStatus = 0;
+		return 0;
+	}
+	return -1;
 }
 
 int DBFile::Open (char* f_path) {
+	//
+	FILE *heap_file_data = fopen(f_path, "rb");
+
+	if (heap_file_data == nullptr) {
+		cout << "Input file wasn't found" << endl;
+		return -1;
+	}
+
+	fseek(heap_file_data, 0, SEEK_END);
+	off_t file_size = ftell (heap_file_data);
+	fclose(heap_file_data);
+
+	int status = file.Open(file_size, f_path);
+	if (status == 0) {
+		fileName = f_path;
+		fileStatus = 0;
+		return 0;
+	}
+	return -1;
 }
 
 void DBFile::Swap(DBFile& _other) {
@@ -41,9 +76,38 @@ void DBFile::Swap(DBFile& _other) {
 }
 
 void DBFile::Load (Schema& schema, char* textFile) {
+
+	// db_file must be opened before loading
+	if (fileStatus == -1) {
+		cout << "Database file is not open" << endl;
+		exit(-1);
+	}
+
+	FILE *text_data = fopen(textFile, "rt");
+
+	if (text_data == nullptr) {
+		cout << "Input file wasn't found" << endl;
+		exit(-1);
+	}
+
+	while(true) {
+		Record record;
+		if(record.ExtractNextRecord(schema, *text_data)) {
+			AppendRecord(record);
+		} else { //EOF
+			break;
+		}
+	}
+
+	//TODO: update catalog and save catalog
+	schema.SetTablePath(fileName);
+
+	fclose(text_data);
 }
 
 int DBFile::Close () {
+	file.Close();
+	fileStatus = -1;
 }
 
 void DBFile::MoveFirst () {
