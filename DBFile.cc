@@ -10,14 +10,15 @@
 using namespace std;
 
 
-DBFile::DBFile () : fileName("") {}
+DBFile::DBFile () : fileName(""), fileStatus(-1), page_idx(0) {}
 
 DBFile::~DBFile () {
 	file.Close();
 }
 
 DBFile::DBFile(const DBFile& _copyMe) :
-	file(_copyMe.file),	fileName(_copyMe.fileName), fileStatus(_copyMe.fileStatus) {}
+	file(_copyMe.file),	fileName(_copyMe.fileName), fileStatus(_copyMe.fileStatus),
+	page_idx(_copyMe.page_idx) {}
 
 DBFile& DBFile::operator=(const DBFile& _copyMe) {
 	// handle self-assignment first
@@ -26,6 +27,7 @@ DBFile& DBFile::operator=(const DBFile& _copyMe) {
 	file = _copyMe.file;
 	fileName = _copyMe.fileName;
 	fileStatus = _copyMe.fileStatus;
+	page_idx = _copyMe.page_idx;
 
 	return *this;
 }
@@ -43,13 +45,14 @@ int DBFile::Create (char* f_path, FileType f_type) {
 	if (status == 0) {
 		fileName = f_path;
 		fileStatus = 0;
+		page_idx = 0;
 		return 0;
 	}
 	return -1;
 }
 
 int DBFile::Open (char* f_path) {
-	//
+
 	FILE *heap_file_data = fopen(f_path, "rb");
 
 	if (heap_file_data == nullptr) {
@@ -65,6 +68,7 @@ int DBFile::Open (char* f_path) {
 	if (status == 0) {
 		fileName = f_path;
 		fileStatus = 0;
+		page_idx = 0;
 		return 0;
 	}
 	return -1;
@@ -108,8 +112,8 @@ void DBFile::Load (Schema& schema, char* textFile) {
 }
 
 int DBFile::Close () {
-	file.Close();
 	fileStatus = -1;
+	return file.Close();
 }
 
 void DBFile::MoveFirst () {
@@ -125,7 +129,7 @@ void DBFile::AppendRecord (Record& rec) {
 	Page current_page;
 	if (file.GetPage(current_page, page_idx) == 0) {
 		if (current_page.Append(rec) == 0) { // page is full
-			page_idx++;
+			page_idx++; //TODO: check this if case
 			Page new_page;
 			file.AddPage(new_page, page_idx);
 			AppendRecord(rec); // or new_page.Append(rec);
@@ -137,4 +141,19 @@ void DBFile::AppendRecord (Record& rec) {
 }
 
 int DBFile::GetNext (Record& rec) {
+	if (fileStatus == -1) {
+		cout << "input file is not open" << endl;
+		return -1;
+	}
+
+	// file current page is null or it is empty
+	if (page_idx == 0 || current_page.GetFirst(rec) == 0) {
+		if (file.GetPage(current_page, page_idx) == -1) {
+			cout << "failed to extract page from the file: " << fileName << " page index: " << page_idx << endl;
+			return -1;
+		}
+		page_idx++;
+	}
+
+	return 0;
 }

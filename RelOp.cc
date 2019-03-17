@@ -11,6 +11,13 @@ Scan::Scan(Schema& _schema, DBFile& _file) : schema(_schema), file(_file) {}
 
 Scan::~Scan() {}
 
+bool Scan::GetNext(Record& _record) {
+    int status = file.GetNext(_record);
+    if (status == 0)
+        return true;
+    return false;
+}
+
 ostream& Scan::print(ostream& _os) {
     return _os << "SCAN [ number of tuples: "<< schema.GetTuplesNumber() << " (end of scan operator) ]" << endl;
 }
@@ -74,6 +81,15 @@ Select::Select(Schema& _schema, CNF& _predicate, Record& _constants,
 
 Select::~Select() {}
 
+bool Select::GetNext(Record& _record)  {
+    if (producer->GetNext(_record)) {
+        if (predicate.Run(_record, constants)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 ostream& Select::print(ostream& _os) {
     _os << "SELECT [ estimated cardinality: " << schema.GetTuplesNumber() << " ]" << endl;
 	return _os << "\t\t\t\t\t[ " << *producer << "\t\t\t\t(end of selection operator) ]" << endl;
@@ -101,6 +117,14 @@ Project::Project(Schema& _schemaIn, Schema& _schemaOut, int _numAttsInput,
 }
 
 Project::~Project() {}
+
+bool Project::GetNext(Record& _record) {
+    if (producer->GetNext(_record)) {
+        _record.Project(keepMe, numAttsOutput, numAttsInput);
+        return true;
+    }
+    return false;
+}
 
 ostream& Project::print(ostream& _os) {
     _os << "PROJECT [ projected attributes:";
@@ -260,11 +284,27 @@ void GroupBy::Swap(GroupBy &_other) {
 
 WriteOut::WriteOut(Schema& _schema, string& _outFile, RelationalOp* _producer) :
     schema(_schema), outFile(_outFile), producer(_producer) {
-    // next phase: open the file
+    // keep output file opened for the query results
+    outStream.open(outFile, ios::out | ios::trunc);
+    if (!outStream.is_open()) {
+        cout << "output file for the results failed to open" << endl;
+        exit(-1);
+    }
 }
 
 WriteOut::~WriteOut() {
-    // next phase: close the file
+    // close the output file
+    if (!outStream.is_open()) {
+        outStream.close();
+    }
+}
+
+bool WriteOut::GetNext(Record& _record) {
+    if (producer->GetNext(_record)) {
+        _record.print(outStream, schema);
+        return true;
+    }
+    return false;
 }
 
 ostream& WriteOut::print(ostream& _os) {
@@ -282,6 +322,13 @@ void WriteOut::Swap(WriteOut &_other) {
 void QueryExecutionTree::SetRoot(RelationalOp& _root) {
     root = &_root;
     //TODO: assign operator may not be impl.
+}
+
+void QueryExecutionTree::ExecuteQuery() {
+    Record record;
+    while (root->GetNext(record)) {
+        //TODO: what do we do with the record?
+    }
 }
 
 ostream& operator<<(ostream& _os, QueryExecutionTree& _op) {

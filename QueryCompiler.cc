@@ -123,7 +123,7 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 
     //TODO: WriteOut is used after the actual execution
     //TODO: new schema or schema of the producer?
-    string out_file_name = "out file path";
+    string out_file_name = DB_QUERY_RESULT_OUT_FILE;
     WriteOut *write_out = new WriteOut(pre_out_operator->GetSchemaOut(), out_file_name, pre_out_operator);
 
 	// connect everything in the query execution tree and return

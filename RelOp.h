@@ -2,6 +2,7 @@
 #define _REL_OP_H
 
 #include <iostream>
+#include <fstream>
 
 #include "Swap.h"
 #include "Config.h"
@@ -55,7 +56,7 @@ public:
 
 	int GetNoPages() { return noPages; }
 
-	virtual bool GetNext(Record& _record) {}
+	virtual bool GetNext(Record& _record);
 
 	Schema& GetSchemaOut() { return schema; }
 
@@ -83,7 +84,7 @@ public:
 		RelationalOp* _producer);
 	virtual ~Select();
 
-	virtual bool GetNext(Record& _record) {}
+	virtual bool GetNext(Record& _record);
 
 	Schema& GetSchemaOut() { return schema; }
 
@@ -116,7 +117,7 @@ public:
 		int _numAttsOutput, int* _keepMe, RelationalOp* _producer);
 	virtual ~Project();
 
-	virtual bool GetNext(Record& _record) {}
+	virtual bool GetNext(Record& _record);
 
 	int GetNumAttsOutput() { return numAttsOutput; }
 	Schema& GetSchemaOut() { return schemaOut; }
@@ -246,6 +247,7 @@ private:
 
 	// output file where to write the result records
 	string outFile;
+    ofstream outStream; // for outputting the query results
 
 	// operator generating data
 	RelationalOp* producer;
@@ -255,7 +257,7 @@ public:
 	WriteOut(Schema& _schema, string& _outFile, RelationalOp* _producer);
 	virtual ~WriteOut();
 
-	virtual bool GetNext(Record& _record) {}
+	virtual bool GetNext(Record& _record);
 
 	void Swap(WriteOut& _other);
 
@@ -273,7 +275,7 @@ public:
 	QueryExecutionTree() {}
 	virtual ~QueryExecutionTree() {}
 
-	void ExecuteQuery() {}
+	void ExecuteQuery();
 	void SetRoot(RelationalOp& _root);
 
     friend ostream& operator<<(ostream& _os, QueryExecutionTree& _op);

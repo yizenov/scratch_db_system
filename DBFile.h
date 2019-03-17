@@ -15,6 +15,8 @@ private:
 	int fileStatus; // 0 when file is open, -1 otherwise
 	int page_idx; // current page index
 
+	Page current_page; // current page that is being read
+
 public:
 	DBFile ();
 	virtual ~DBFile ();
@@ -41,6 +43,7 @@ public:
 	void AppendRecord (Record& _addMe);
 
 	// get next record from the heap file
+	// return 0 on success, -1 otherwise
 	int GetNext (Record& _fetchMe);
 };
 
