@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   cout << "Enter Next Query" << endl;
   while (true) {
 
-//      std::ifstream in("Queries/5.sql");
+//      std::ifstream in("Queries_phase2/5.sql");
 //      std::cin.rdbuf(in.rdbuf()); //TODO: get as it would from the terminal
 
       // the query parser is accessed directly through yyparse

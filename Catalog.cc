@@ -2,6 +2,8 @@
 #include "TwoWayList.cc"
 #include "InefficientMap.cc"
 
+#include <bits/stdc++.h>
+
 using namespace std;
 
 bool isItError(int rc) {
@@ -178,15 +180,18 @@ bool Catalog::Save() {
     Schema *table_schema = &schema_data_->CurrentData();
 
     auto it = existing_tables.find(table_name);
-    if (it != existing_tables.end()) {
+    if (it != existing_tables.end() && !table_schema->GetSchemaStatus()) {
       schema_data_->Advance(); // skips existing and unchanged tables in db.
       continue;
     }
 
+    unsigned long file_name_len = table_schema->GetTablePath().length() + 1;
+    char file_path[file_name_len];
+    strcpy(file_path, table_schema->GetTablePath().c_str());
+
     sqlite3_bind_text(stmt_table, 1, table_name.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_int(stmt_table, 2, table_schema->GetTuplesNumber());
-    sqlite3_bind_text(stmt_table, 3, table_schema->GetTablePath().c_str(), -1,
-                      SQLITE_STATIC);
+    sqlite3_bind_text(stmt_table, 3, file_path, -1, SQLITE_STATIC);
     rc = sqlite3_step(stmt_table);
     if (isItError(rc)) {
       cout << sqlite3_errmsg(catalog_db) << endl;
@@ -202,11 +207,11 @@ bool Catalog::Save() {
 
       string attr_type = "Unknown";
       if (att.type == Integer)
-        attr_type = "Integer"; //"INTEGER";
+        attr_type = "Integer";
       else if (att.type == Float)
-        attr_type = "Float"; //"FLOAT";
+        attr_type = "Float";
       else if (att.type == String)
-        attr_type = "String"; //"STRING";
+        attr_type = "String";
 
       sqlite3_bind_text(stmt_attr, 1, att.name.c_str(), -1, SQLITE_STATIC);
       sqlite3_bind_text(stmt_attr, 2, attr_type.c_str(), -1, SQLITE_STATIC);

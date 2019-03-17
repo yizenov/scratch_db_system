@@ -90,6 +90,11 @@ void DBFile::Load (Schema& schema, char* textFile) {
 		exit(-1);
 	}
 
+	// initializing first page in the given file
+	Page first_page;
+	file.AddPage(first_page, 0);
+
+	MoveFirst();
 	while(true) {
 		Record record;
 		if(record.ExtractNextRecord(schema, *text_data)) {
@@ -98,9 +103,6 @@ void DBFile::Load (Schema& schema, char* textFile) {
 			break;
 		}
 	}
-
-	//TODO: update catalog and save catalog
-	schema.SetTablePath(fileName);
 
 	fclose(text_data);
 }
@@ -111,9 +113,27 @@ int DBFile::Close () {
 }
 
 void DBFile::MoveFirst () {
+	page_idx = 0;
+	Page first_page;
+	if (file.GetPage(first_page, page_idx) != 0) {
+		cout << "failed to extract first page from the file: " << fileName << endl;
+		exit(-1);
+	}
 }
 
 void DBFile::AppendRecord (Record& rec) {
+	Page current_page;
+	if (file.GetPage(current_page, page_idx) == 0) {
+		if (current_page.Append(rec) == 0) { // page is full
+			page_idx++;
+			Page new_page;
+			file.AddPage(new_page, page_idx);
+			AppendRecord(rec); // or new_page.Append(rec);
+		}
+	} else {
+		cout << "failed to extract page from the file: " << fileName << " page index: " << page_idx << endl;
+		exit(-1);
+	}
 }
 
 int DBFile::GetNext (Record& rec) {

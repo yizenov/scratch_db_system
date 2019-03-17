@@ -210,6 +210,9 @@ void File :: AddPage (Page& addMe, off_t whichPage) {
 	lseek (fileDescriptor, PAGE_SIZE * (whichPage+1), SEEK_SET);
 	write (fileDescriptor, bits, PAGE_SIZE);
 
+	// increasing the number of pages of the file
+    curLength++;
+
 	delete [] bits;
 }
 

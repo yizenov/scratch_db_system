@@ -14,6 +14,7 @@ QueryParser.c
 QueryParser.h
 out*
 tpch_0_01_sf/*tbl
+HeapFileData/*
 
 # User-specific stuff
 .idea/**/workspace.xml

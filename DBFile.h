@@ -13,6 +13,7 @@ private:
 	File file;
 	string fileName;
 	int fileStatus; // 0 when file is open, -1 otherwise
+	int page_idx; // current page index
 
 public:
 	DBFile ();
