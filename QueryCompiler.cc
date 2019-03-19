@@ -1,4 +1,5 @@
 #include <string>
+#include <bits/stdc++.h>
 
 #include "QueryCompiler.h"
 #include "QueryOptimizer.h"
@@ -51,7 +52,7 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
     //TODO: create instances in heap and convert the functions to void
     Project *projection = new Project();
     Sum *sum = new Sum();
-    RelationalOp* pre_out_operator = new WriteOut();
+    RelationalOp* pre_out_operator; // = new WriteOut();
 
 	// create join operators based on the optimal order computed by the optimizer
 	if (join_check) {
@@ -389,17 +390,30 @@ void QueryCompiler::CreateScans(TableList& _tables) {
 
 	TableList* current_table = &_tables;
 	while (current_table) {
-
-	    if (existing_tables.find(current_table->tableName) == existing_tables.end()) {
-            cout << "table: " << current_table->tableName << " doesn't exist in the database" << endl;
+        string table_name = current_table->tableName;
+	    if (existing_tables.find(table_name) == existing_tables.end()) {
+            cout << "table: " << table_name << " doesn't exist in the database" << endl;
             exit(-1);
         }
 
-		Schema schema;
-		DBFile table_file; //TODO: this must be created with input arguments
-		string table_name = current_table->tableName;
+        string heap_file_path;
+	    if (!catalog->GetDataFile(table_name, heap_file_path)) {
+	        cout << "scan operator couldn't find the heap file: " << table_name << endl;
+	        exit(-1);
+	    }
+        unsigned long heap_file_name_len = heap_file_path.length() + 1;
+        char heap_file[heap_file_name_len];
+        strcpy(heap_file, heap_file_path.c_str());
 
+		DBFile table_file; //TODO: do we have to keep the files open?
+        if (table_file.Open(heap_file) == -1) {
+            cout << "scan operator couldn't open the heap file: " << table_name << endl;
+            exit(-1);
+        }
+
+        Schema schema;
 		catalog->GetSchema(table_name, schema);
+
 		Scan *table_scan = new Scan(schema, table_file);
 		Keyify<string> table_key(table_name);
 		scanMap.Insert(table_key, *table_scan);

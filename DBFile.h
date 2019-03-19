@@ -28,7 +28,10 @@ public:
 	int Create (char* fpath, FileType file_type);
 
 	// file path is passed from catalog
+    // return 0 on success, -1 otherwise
 	int Open (char* fpath);
+
+	// return length in number of pages
 	int Close ();
 
 	void Swap(DBFile& _other);

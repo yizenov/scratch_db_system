@@ -26,7 +26,7 @@ private:
     int rc;
 
 	string table_col1 = "name", table_col2 = "tuple_number", table_col3 = "location";
-    string table_attr_col1 = "t_name", table_attr_col2 = "a_name";
+    string table_attr_col1 = "t_name", table_attr_col2 = "a_name", table_attr_col3 = "a_order";
     string attr_col1 = "name", attr_col2 = "type", attr_col3 = "dist_values";
 
 public:

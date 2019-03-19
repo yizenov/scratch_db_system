@@ -161,8 +161,8 @@ bool Catalog::Save() {
   sqlite3_prepare_v2(catalog_db, attr_query.c_str(), -1, &stmt_attr, nullptr);
 
   string table_attr_query = "INSERT INTO " DB_TABLE_ATTR_LIST " (" +
-                            table_attr_col1 + "," + table_attr_col2 +
-                            ") VALUES (?1,?2);";
+                            table_attr_col1 + "," + table_attr_col2 + "," + table_attr_col3 +
+                            ") VALUES (?1,?2, ?3);";
   sqlite3_stmt *stmt_table_attr;
   sqlite3_prepare_v2(catalog_db, table_attr_query.c_str(), -1, &stmt_table_attr,
                      nullptr);
@@ -227,10 +227,18 @@ bool Catalog::Save() {
       sqlite3_clear_bindings(stmt_attr);
       sqlite3_reset(stmt_attr);
 
+      int attr_index = table_schema->Index(att.name);
+      if (attr_index == -1) {
+          cout << "attribute index is incorrect" << endl;
+          exit(-1);
+      }
+
       sqlite3_bind_text(stmt_table_attr, 1, table_name.c_str(), -1,
                         SQLITE_STATIC);
       sqlite3_bind_text(stmt_table_attr, 2, att.name.c_str(), -1,
                         SQLITE_STATIC);
+      sqlite3_bind_int(stmt_table_attr, 3, attr_index);
+
       rc = sqlite3_step(stmt_table_attr);
       if (isItError(rc)) {
         cout << sqlite3_errmsg(catalog_db) << endl;
@@ -419,7 +427,7 @@ void Catalog::UploadSchemas() {
     query = "SELECT * FROM " DB_TABLE_LIST ";";
     sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);
 
-    string inner_query_one = "SELECT " + table_attr_col2 +
+    string inner_query_one = "SELECT " + table_attr_col2 + ", " + table_attr_col3 +
                              " FROM " DB_TABLE_ATTR_LIST " WHERE " +
                              table_attr_col1 + " = ?;";
     sqlite3_stmt *inner_stmt_one;
@@ -441,10 +449,13 @@ void Catalog::UploadSchemas() {
       vector<string> attributes, attr_types;
       vector<unsigned int> distinct_values;
 
-      sqlite3_bind_text(inner_stmt_one, 1, table_name.c_str(), -1, NULL);
+      vector<int> attr_orders; // temporal fix
+
+      sqlite3_bind_text(inner_stmt_one, 1, table_name.c_str(), -1, SQLITE_STATIC);
       while (sqlite3_step(inner_stmt_one) == SQLITE_ROW) {
         string attr_name = string(reinterpret_cast<const char *>(
             sqlite3_column_text(inner_stmt_one, 0)));
+        int attr_order = (int)sqlite3_column_int(inner_stmt_one, 1);
 
         sqlite3_bind_text(inner_stmt_two, 1, attr_name.c_str(), -1, NULL);
         while (sqlite3_step(inner_stmt_two) == SQLITE_ROW) {
@@ -455,6 +466,7 @@ void Catalog::UploadSchemas() {
               inner_stmt_two, 1); // TODO: extra work
           attributes.push_back(attr_name);
           attr_types.push_back(attr_type);
+          attr_orders.push_back(attr_order);
           distinct_values.push_back(dist_no);
           break;
         }
@@ -462,7 +474,18 @@ void Catalog::UploadSchemas() {
         sqlite3_reset(inner_stmt_two);
       }
 
-      Schema table_schema(attributes, attr_types, distinct_values);
+      //ordering the attributes
+      int attr_no = attributes.size();
+      vector<string> new_attributes(attr_no), new_attr_types(attr_no);
+      vector<unsigned int> new_distinct_values(attr_no);
+      for (auto i = 0; i < attr_orders.size(); i++) {
+        int idx = attr_orders[i];
+        new_attributes[idx] = attributes[i];
+        new_attr_types[idx] = attr_types[i];
+        new_distinct_values[idx] = distinct_values[i];
+      }
+
+      Schema table_schema(new_attributes, new_attr_types, new_distinct_values);
       sqlite3_clear_bindings(inner_stmt_one);
       sqlite3_reset(inner_stmt_one);
 

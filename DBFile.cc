@@ -18,7 +18,8 @@ DBFile::~DBFile () {
 
 DBFile::DBFile(const DBFile& _copyMe) :
 	file(_copyMe.file),	fileName(_copyMe.fileName), fileStatus(_copyMe.fileStatus),
-	page_idx(_copyMe.page_idx) {}
+	page_idx(_copyMe.page_idx) {
+}
 
 DBFile& DBFile::operator=(const DBFile& _copyMe) {
 	// handle self-assignment first
@@ -46,6 +47,11 @@ int DBFile::Create (char* f_path, FileType f_type) {
 		fileName = f_path;
 		fileStatus = 0;
 		page_idx = 0;
+
+        // initializing first page in the given file
+        file.AddPage(current_page, 0);
+        MoveFirst();
+
 		return 0;
 	}
 	return -1;
@@ -69,6 +75,7 @@ int DBFile::Open (char* f_path) {
 		fileName = f_path;
 		fileStatus = 0;
 		page_idx = 0;
+        MoveFirst();
 		return 0;
 	}
 	return -1;
@@ -77,6 +84,9 @@ int DBFile::Open (char* f_path) {
 void DBFile::Swap(DBFile& _other) {
 	SWAP(fileName, _other.fileName);
 	OBJ_SWAP(file, _other.file);
+	SWAP(fileStatus, _other.fileStatus);
+	SWAP(page_idx, _other.page_idx);
+	OBJ_SWAP(current_page, _other.current_page);
 }
 
 void DBFile::Load (Schema& schema, char* textFile) {
@@ -94,11 +104,6 @@ void DBFile::Load (Schema& schema, char* textFile) {
 		exit(-1);
 	}
 
-	// initializing first page in the given file
-	Page first_page;
-	file.AddPage(first_page, 0);
-
-	MoveFirst();
 	while(true) {
 		Record record;
 		if(record.ExtractNextRecord(schema, *text_data)) {
@@ -126,7 +131,7 @@ void DBFile::MoveFirst () {
 }
 
 void DBFile::AppendRecord (Record& rec) {
-	Page current_page;
+
 	if (file.GetPage(current_page, page_idx) == 0) {
 		if (current_page.Append(rec) == 0) { // page is full
 			page_idx++; //TODO: check this if case
@@ -146,14 +151,19 @@ int DBFile::GetNext (Record& rec) {
 		return -1;
 	}
 
+	//TODO: no data is retrieved so far?!
+
 	// file current page is null or it is empty
-	if (page_idx == 0 || current_page.GetFirst(rec) == 0) {
-		if (file.GetPage(current_page, page_idx) == -1) {
-			cout << "failed to extract page from the file: " << fileName << " page index: " << page_idx << endl;
-			return -1;
+    if (current_page.GetFirst(rec) == 0) {
+        if (file.GetPage(current_page, page_idx) == -1) {
+            cout << "failed to extract page from the file: " << fileName << " page index: " << page_idx << endl;
+            return -1;
+        }
+		if (current_page.GetFirst(rec) == 0) {
+			//TODO:
 		}
-		page_idx++;
-	}
+        page_idx++;
+    }
 
 	return 0;
 }
