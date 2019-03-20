@@ -9,13 +9,13 @@ ostream& operator<<(ostream& _os, RelationalOp& _op) {
 
 Scan::Scan(Schema& _schema, DBFile& _file) : schema(_schema), file(_file) {}
 
-Scan::~Scan() {}
+Scan::~Scan() {
+    file.Close();
+}
 
 bool Scan::GetNext(Record& _record) {
     int status = file.GetNext(_record);
-    if (status == 0)
-        return true;
-    return false;
+    return status == 0;
 }
 
 ostream& Scan::print(ostream& _os) {
@@ -82,7 +82,7 @@ Select::Select(Schema& _schema, CNF& _predicate, Record& _constants,
 Select::~Select() {}
 
 bool Select::GetNext(Record& _record)  {
-    if (producer->GetNext(_record)) {
+    while (producer->GetNext(_record)) {
         if (predicate.Run(_record, constants)) {
             return true;
         }
@@ -285,7 +285,7 @@ void GroupBy::Swap(GroupBy &_other) {
 WriteOut::WriteOut(Schema& _schema, string& _outFile, RelationalOp* _producer) :
     schema(_schema), outFile(_outFile), producer(_producer) {
     // keep output file opened for the query results
-    outStream.open(outFile, ios::out | ios::trunc);
+    outStream.open(outFile); //ios::out | ios::trunc
     if (!outStream.is_open()) {
         cout << "output file for the results failed to open" << endl;
         exit(-1);
@@ -301,7 +301,12 @@ WriteOut::~WriteOut() {
 
 bool WriteOut::GetNext(Record& _record) {
     if (producer->GetNext(_record)) {
+        if (!outStream.is_open()) {
+            outStream.open(outFile);
+        }
         _record.print(outStream, schema);
+        outStream << endl;
+        outStream.flush();
         return true;
     }
     return false;
@@ -316,6 +321,7 @@ void WriteOut::Swap(WriteOut &_other) {
     SWAP(noPages, _other.noPages);
     OBJ_SWAP(schema, _other.schema);
     STL_SWAP(outFile, _other.outFile);
+    STL_SWAP(outStream, _other.outStream);
     SWAP(producer, _other.producer);
 }
 
@@ -326,9 +332,7 @@ void QueryExecutionTree::SetRoot(RelationalOp& _root) {
 
 void QueryExecutionTree::ExecuteQuery() {
     Record record;
-    while (root->GetNext(record)) {
-        //TODO: what do we do with the record?
-    }
+    while (root->GetNext(record)) {}
 }
 
 ostream& operator<<(ostream& _os, QueryExecutionTree& _op) {

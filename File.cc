@@ -110,7 +110,7 @@ void Page :: FromBinary (char* bits) {
 }
 
 
-File :: File () : fileDescriptor(-1), fileName(""), curLength(0) {
+File :: File () : fileDescriptor(-1), fileName(""), curLength(1) {
 }
 
 File :: ~File () {
@@ -152,7 +152,7 @@ int File :: Open (int fileLen, char* fName) {
 		lseek (fileDescriptor, 0, SEEK_SET);
 		read (fileDescriptor, &curLength, sizeof (off_t));
 	}
-	else curLength = 0;
+	else curLength = 1;
 
 	return 0;
 }

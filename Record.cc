@@ -154,6 +154,7 @@ void Record :: Project (int* attsToKeep, int numAttsToKeep, int numAttsNow) {
 
 	for (int i = 0; i < numAttsToKeep; i++) {
 		// if we are keeping the last record, be careful!
+		auto a = attsToKeep[i];
 		if (attsToKeep[i] == numAttsNow - 1) {
 			// take the length of the record and subtract the start position
 			totSpace += ((int *) bits)[0] - ((int *) bits)[attsToKeep[i] + 1];
@@ -430,6 +431,8 @@ ostream& Record :: print(ostream& _os, Schema& mySchema) {
 			_os << ", ";
 		}
 	}
+
+	_os << '}';
 
 	return _os;
 }

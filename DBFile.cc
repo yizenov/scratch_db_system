@@ -1,4 +1,5 @@
 #include <string>
+#include <bits/stdc++.h>
 
 #include "Config.h"
 #include "Record.h"
@@ -10,7 +11,8 @@
 using namespace std;
 
 
-DBFile::DBFile () : fileName(""), fileStatus(-1), page_idx(0) {}
+DBFile::DBFile () :
+	fileName(""), fileStatus(-1), page_idx(0) {}
 
 DBFile::~DBFile () {
 	file.Close();
@@ -45,13 +47,8 @@ int DBFile::Create (char* f_path, FileType f_type) {
 	int status = file.Open(0, f_path);
 	if (status == 0) {
 		fileName = f_path;
-		fileStatus = 0;
-		page_idx = 0;
-
-        // initializing first page in the given file
-        file.AddPage(current_page, 0);
         MoveFirst();
-
+        page_idx = -1; // reading file metadata
 		return 0;
 	}
 	return -1;
@@ -73,9 +70,7 @@ int DBFile::Open (char* f_path) {
 	int status = file.Open(file_size, f_path);
 	if (status == 0) {
 		fileName = f_path;
-		fileStatus = 0;
-		page_idx = 0;
-        MoveFirst();
+		page_idx = -1; // reading file metadata
 		return 0;
 	}
 	return -1;
@@ -109,6 +104,8 @@ void DBFile::Load (Schema& schema, char* textFile) {
 		if(record.ExtractNextRecord(schema, *text_data)) {
 			AppendRecord(record);
 		} else { //EOF
+			file.AddPage(current_page, page_idx); // writing the last page
+			//current_page.EmptyItOut();
 			break;
 		}
 	}
@@ -123,46 +120,50 @@ int DBFile::Close () {
 
 void DBFile::MoveFirst () {
 	page_idx = 0;
-	Page first_page;
-	if (file.GetPage(first_page, page_idx) != 0) {
+	if (file.GetPage(current_page, page_idx) == -1) {
 		cout << "failed to extract first page from the file: " << fileName << endl;
 		exit(-1);
 	}
+    fileStatus = 0;
 }
 
 void DBFile::AppendRecord (Record& rec) {
 
-	if (file.GetPage(current_page, page_idx) == 0) {
-		if (current_page.Append(rec) == 0) { // page is full
-			page_idx++; //TODO: check this if case
-			Page new_page;
-			file.AddPage(new_page, page_idx);
-			AppendRecord(rec); // or new_page.Append(rec);
-		}
-	} else {
-		cout << "failed to extract page from the file: " << fileName << " page index: " << page_idx << endl;
-		exit(-1);
-	}
+    if (current_page.Append(rec) == 0) { // page is full
+        file.AddPage(current_page, page_idx);
+        current_page.EmptyItOut();
+        page_idx++;
+        AppendRecord(rec);
+    }
 }
 
 int DBFile::GetNext (Record& rec) {
 	if (fileStatus == -1) {
-		cout << "input file is not open" << endl;
-		return -1;
+		unsigned long heap_file_name_len = fileName.length() + 1;
+		char heap_file_path[heap_file_name_len];
+		strcpy(heap_file_path, fileName.c_str());
+		if (Open(heap_file_path) == -1) {
+			cout << "the input heap file failed to open: " << fileName << endl;
+			exit(-1);
+		}
+		MoveFirst();
 	}
-
-	//TODO: no data is retrieved so far?!
 
 	// file current page is null or it is empty
     if (current_page.GetFirst(rec) == 0) {
-        if (file.GetPage(current_page, page_idx) == -1) {
-            cout << "failed to extract page from the file: " << fileName << " page index: " << page_idx << endl;
-            return -1;
+        page_idx++;
+        if (page_idx + 1 == file.GetLength() || file.GetPage(current_page, page_idx) == -1) {
+            return -1; // EOF or error
         }
 		if (current_page.GetFirst(rec) == 0) {
-			//TODO:
+            cout << "failed to extract pages from the file: " << fileName << endl;
+            exit(-1);
 		}
-        page_idx++;
+    }
+
+    if (rec.GetBits() == NULL) {
+        cout << "failed to read the next record" << endl;
+        exit(-1);
     }
 
 	return 0;

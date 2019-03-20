@@ -41,7 +41,7 @@ public:
     void CreateScans(TableList& _tables);
     void CreateSelects(AndList& _predicate);
     RelationalOp* CreateJoins(OptimizationTree& _root, AndList& _predicate);
-    void CreateProjection(NameList& _attsToSelec, RelationalOp& _producer, Project &_projection);
+    void CreateProjection(NameList& _attsToSelec, RelationalOp& _producer, Project &_projection, vector<int>& attr_indices);
     void CreateAggregators(FuncOperator& _finalFunction, RelationalOp& _producer, Sum &_sum);
     GroupBy* CreateGroupBy(NameList& _groupingAtts, FuncOperator& _finalFunction, NameList& _attsToSelect, RelationalOp& _producer);
 };

@@ -62,6 +62,7 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
     //TODO: losing pointers to producers after functions (heap/stack objects/pointers)
 
     Select *single_selection;
+    vector<int> *attr_indices = new vector<int>();
 
     if (_groupingAtts) { // group-by operator
         if (join_check) {
@@ -96,17 +97,17 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
         //TODO: handle project+agg queries
     } else if (_attsToSelect) { // projection operator
         if (join_check) {
-            CreateProjection(*_attsToSelect, *pre_out_operator, *projection);
+            CreateProjection(*_attsToSelect, *pre_out_operator, *projection, *attr_indices);
             pre_out_operator = projection;
             project_check = true;
         } else if (selectionMap.Length() == 1) {
             single_selection = &selectionMap.CurrentData();
-            CreateProjection(*_attsToSelect, *single_selection, *projection);
+            CreateProjection(*_attsToSelect, *single_selection, *projection, *attr_indices);
             pre_out_operator = projection;
             project_check = true;
         } else if (scanMap.Length() == 1) {
             Scan single_scan = scanMap.CurrentData();
-            CreateProjection(*_attsToSelect, single_scan, *projection);
+            CreateProjection(*_attsToSelect, single_scan, *projection, *attr_indices);
             pre_out_operator = projection;
             project_check = true;
         } else {
@@ -152,9 +153,9 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	//scanMap.Clear();
 }
 
-void QueryCompiler::CreateProjection(NameList& _attsToSelect, RelationalOp& _producer, Project &_projection) {
-
-    vector<int> attr_names;
+void QueryCompiler::CreateProjection(NameList& _attsToSelect, RelationalOp& _producer, Project &_projection, vector<int>& attr_indices) {
+    //TODO: pointer keepMe loses values after finishing the function due to the scope of the vector below
+    //vector<int> attr_names;
     int no_attr_out = 0;
 
     Schema producer_schema = _producer.GetSchemaOut();
@@ -169,13 +170,13 @@ void QueryCompiler::CreateProjection(NameList& _attsToSelect, RelationalOp& _pro
             exit(-1);
         }
 
-        attr_names.emplace_back(att_idx);
+        attr_indices.emplace_back(att_idx);
         current_attr = current_attr->next;
     }
     if (no_attr_out > 0) {
         Schema projection_schema(producer_schema);
         int no_attr_in = (int) producer_schema.GetAtts().size();
-        Project project(producer_schema, projection_schema, no_attr_in, no_attr_out, &attr_names[0], &_producer);
+        Project project(producer_schema, projection_schema, no_attr_in, no_attr_out, &attr_indices[0], &_producer);
         _projection.Swap(project);
     } else {
         cout << "no attribute to project" << endl;
