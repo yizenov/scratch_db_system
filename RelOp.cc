@@ -28,6 +28,10 @@ void Scan::Swap(Scan &_other) {
     OBJ_SWAP(file, _other.file);
 }
 
+/*
+ * if an operand is Literal, then corresponding
+ *      whichAtt is the index of the literal in the list of selection predicates.
+ */
 Select::Select(Schema& _schema, CNF& _predicate, Record& _constants,
 	RelationalOp* _producer) : schema(_schema), predicate(_predicate),
 	constants(_constants), producer(_producer) {
@@ -37,7 +41,14 @@ Select::Select(Schema& _schema, CNF& _predicate, Record& _constants,
         // estimating the cardinality of a relation
         int denominator_value = 0;
 
-        if (_predicate.andList[0].operand2 == Literal) {
+        // extracting first selection predicate in order to initialize denominator value (i.e. avoid zero division)
+        if (_predicate.andList[0].operand2 == Literal && _predicate.andList[0].operand1 == Literal) {
+            cout << "there may be at most one literal in selection predicate" << endl;
+            exit(-1);
+        } else if (_predicate.andList[0].operand1 == Left && _predicate.andList[0].operand2 == Left) {
+            cout << "Comparing two columns. This is not supported yet." << endl; //TODO:
+            exit(-1);
+        } else if (_predicate.andList[0].operand2 == Literal) { // if left side of the selection predicate is literal
             CompOperator anOperator = _predicate.andList[0].op;
             string attr_name = schema.GetAtts()[_predicate.andList[0].whichAtt1].name;
             if (anOperator == LessThan || anOperator == GreaterThan) {
@@ -53,11 +64,36 @@ Select::Select(Schema& _schema, CNF& _predicate, Record& _constants,
                 cout << "Unsupported operator" << endl;
                 exit(-1);
             }
+        } else if (_predicate.andList[0].operand1 == Literal) { // if right side of the selection predicate is literal
+            CompOperator anOperator = _predicate.andList[0].op;
+            string attr_name = schema.GetAtts()[_predicate.andList[0].whichAtt2].name;
+            if (anOperator == LessThan || anOperator == GreaterThan) {
+                denominator_value = 3;
+            } else if (anOperator == Equals) {
+                int no_distincts = schema.GetDistincts(attr_name);
+                if (no_distincts <= 0) {
+                    cout << "Incorrect distinct value" << endl;
+                    exit(-1);
+                }
+                denominator_value = no_distincts;
+            } else {
+                cout << "Unsupported operator" << endl;
+                exit(-1);
+            }
+        } else {
+            cout << "Unsupported selection predicate" << endl;
         }
 
+        // processing the rest of the selection predicates
         unsigned counter = 1;
         while (counter < _predicate.numAnds) {
-            if (_predicate.andList[counter].operand2 == Literal) {
+            if (_predicate.andList[counter].operand2 == Literal && _predicate.andList[counter].operand1 == Literal) {
+                cout << "there may be at most one literal in selection predicate" << endl;
+                exit(-1);
+            } else if (_predicate.andList[counter].operand1 == Left && _predicate.andList[counter].operand2 == Left) {
+                cout << "Comparing two columns. This is not supported yet." << endl; //TODO:
+                exit(-1);
+            } else if (_predicate.andList[counter].operand2 == Literal) {
                 CompOperator anOperator = _predicate.andList[counter].op;
                 string attr_name = schema.GetAtts()[_predicate.andList[counter].whichAtt1].name;
                 if (anOperator == LessThan || anOperator == GreaterThan) {
@@ -70,6 +106,24 @@ Select::Select(Schema& _schema, CNF& _predicate, Record& _constants,
                     }
                     denominator_value *= no_distincts;
                 }
+            } else if (_predicate.andList[counter].operand1 == Literal) { // if right side of the selection predicate is literal
+                CompOperator anOperator = _predicate.andList[counter].op;
+                string attr_name = schema.GetAtts()[_predicate.andList[counter].whichAtt2].name;
+                if (anOperator == LessThan || anOperator == GreaterThan) {
+                    denominator_value *= 3;
+                } else if (anOperator == Equals) {
+                    int no_distincts = schema.GetDistincts(attr_name);
+                    if (no_distincts <= 0) {
+                        cout << "Incorrect distinct value" << endl;
+                        exit(-1);
+                    }
+                    denominator_value *= no_distincts;
+                } else {
+                    cout << "Unsupported operator" << endl;
+                    exit(-1);
+                }
+            } else {
+                cout << "Unsupported selection predicate" << endl;
             }
             counter++;
         }
