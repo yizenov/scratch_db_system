@@ -15,6 +15,7 @@ DBFile::DBFile () :
 	fileName(""), fileStatus(-1), page_idx(0) {}
 
 DBFile::~DBFile () {
+    current_page.EmptyItOut();
 	file.Close();
 }
 
@@ -47,8 +48,7 @@ int DBFile::Create (char* f_path, FileType f_type) {
 	int status = file.Open(0, f_path);
 	if (status == 0) {
 		fileName = f_path;
-        MoveFirst();
-        page_idx = -1; // reading file metadata
+        fileStatus = 0;
 		return 0;
 	}
 	return -1;
@@ -86,6 +86,7 @@ void DBFile::Swap(DBFile& _other) {
 
 void DBFile::Load (Schema& schema, char* textFile) {
 
+    //MoveFirst(); //TODO: DBFiles needs to be deleted from the stack
 	// db_file must be opened before loading
 	if (fileStatus == -1) {
 		cout << "Database file is not open" << endl;

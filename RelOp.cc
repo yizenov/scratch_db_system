@@ -46,8 +46,22 @@ Select::Select(Schema& _schema, CNF& _predicate, Record& _constants,
             cout << "there may be at most one literal in selection predicate" << endl;
             exit(-1);
         } else if (_predicate.andList[0].operand1 == Left && _predicate.andList[0].operand2 == Left) {
-            cout << "Comparing two columns. This is not supported yet." << endl; //TODO:
-            exit(-1);
+            // left and right sides are columns. we treat the right side as literal
+            CompOperator anOperator = _predicate.andList[0].op;
+            string attr_name = schema.GetAtts()[_predicate.andList[0].whichAtt1].name;
+            if (anOperator == LessThan || anOperator == GreaterThan) {
+                denominator_value = 9; // since it is a column
+            } else if (anOperator == Equals) {
+                int no_distincts = schema.GetDistincts(attr_name); // we choose distinct of the left side
+                if (no_distincts <= 0) {
+                    cout << "Incorrect distinct value" << endl;
+                    exit(-1);
+                }
+                denominator_value = no_distincts;
+            } else {
+                cout << "Unsupported operator" << endl;
+                exit(-1);
+            }
         } else if (_predicate.andList[0].operand2 == Literal) { // if left side of the selection predicate is literal
             CompOperator anOperator = _predicate.andList[0].op;
             string attr_name = schema.GetAtts()[_predicate.andList[0].whichAtt1].name;
@@ -91,8 +105,22 @@ Select::Select(Schema& _schema, CNF& _predicate, Record& _constants,
                 cout << "there may be at most one literal in selection predicate" << endl;
                 exit(-1);
             } else if (_predicate.andList[counter].operand1 == Left && _predicate.andList[counter].operand2 == Left) {
-                cout << "Comparing two columns. This is not supported yet." << endl; //TODO:
-                exit(-1);
+                // left and right sides are columns. we treat the right side as literal
+                CompOperator anOperator = _predicate.andList[counter].op;
+                string attr_name = schema.GetAtts()[_predicate.andList[counter].whichAtt1].name;
+                if (anOperator == LessThan || anOperator == GreaterThan) {
+                    denominator_value *= 9; // since it is a column
+                } else if (anOperator == Equals) {
+                    int no_distincts = schema.GetDistincts(attr_name); // we choose distinct of the left side
+                    if (no_distincts <= 0) {
+                        cout << "Incorrect distinct value" << endl;
+                        exit(-1);
+                    }
+                    denominator_value *= no_distincts;
+                } else {
+                    cout << "Unsupported operator" << endl;
+                    exit(-1);
+                }
             } else if (_predicate.andList[counter].operand2 == Literal) {
                 CompOperator anOperator = _predicate.andList[counter].op;
                 string attr_name = schema.GetAtts()[_predicate.andList[counter].whichAtt1].name;
