@@ -7,6 +7,9 @@
 #include "DBFile.h"
 #include "InefficientMap.cc" //TODO:undefined reference (forced because of using 'template' in there)
 
+#include <cstring>
+#include <string>
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -343,10 +346,54 @@ void DuplicateRemoval::Swap(DuplicateRemoval &_other) {
 
 Sum::Sum(Schema& _schemaIn, Schema& _schemaOut, Function& _compute, RelationalOp* _producer) :
     schemaIn(_schemaIn), schemaOut(_schemaOut), compute(_compute), producer(_producer) {
-    //TODO: how do we compute a single value?
+    isComputed = false;
 }
 
 Sum::~Sum() {}
+
+bool Sum::GetNext(Record& _record) {
+    if (isComputed)
+        return false;
+    int sum_value1 = 0, temp1 = 0;
+    double sum_value2 = 0, temp2 = 0;
+    while (producer->GetNext(_record)) {
+        compute.Apply(_record, temp1, temp2);
+        sum_value1 += temp1;
+        sum_value2 += temp2;
+    }
+    string res_str;
+    if (schemaOut.GetAtts()[0].type == Integer)
+        res_str = std::to_string(sum_value1);
+    else
+        res_str += std::to_string(sum_value2);
+
+    int currentPosInRec = sizeof (int) * (schemaOut.GetNumAtts() + 1);
+    char* recSpace = new char[PAGE_SIZE];
+
+    char* space = new char[res_str.length() + 1];
+    strcpy(space, res_str.c_str());
+
+    ((int *) recSpace)[0 + 1] = currentPosInRec;
+    if (schemaOut.GetAtts()[0].type == Integer) {
+        *((int *) &(recSpace[currentPosInRec])) = atoi (space);
+        currentPosInRec += sizeof (int);
+    } else if (schemaOut.GetAtts()[0].type == Float) {
+        *((double *) &(recSpace[currentPosInRec])) = atof (space);
+        currentPosInRec += sizeof (double);
+    }
+    ((int *) recSpace)[0] = currentPosInRec;
+    char *res = new char[currentPosInRec];
+    memcpy (res, recSpace, currentPosInRec);
+
+    _record.Consume(res);
+
+    delete [] res;
+    delete [] space;
+    delete [] recSpace;
+    isComputed = true;
+
+    return true;
+}
 
 ostream& Sum::print(ostream& _os) {
     _os << "SUM [ value of sum" << " ]" << endl;

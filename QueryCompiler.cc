@@ -198,10 +198,23 @@ void QueryCompiler::CreateAggregators(FuncOperator& _finalFunction, RelationalOp
         exit(-1);
     }
     Function function;
-    Schema schema, agg_schema;
+    Schema schema;
     schema = _producer.GetSchemaOut();
-    function.GrowFromParseTree(&_finalFunction, schema); //TODO: agg schema or producer schema?
-    Sum sum_op(schema, agg_schema, function, &_producer); //TODO: do insert the join or projection?
+    function.GrowFromParseTree(&_finalFunction, schema);
+
+    //TODO: adjust to cover 9.sql query
+    Attribute agg_attribute;
+    if (function.GetOperatorNumbers() == 1) {
+        int attr_index = function.GetArithmetic()->recInput;
+        agg_attribute.name = schema.GetAtts()[attr_index].name;
+        agg_attribute.type = function.GetAttType();
+    }
+
+    Schema agg_schema;
+    agg_schema.GetAtts().emplace_back(agg_attribute);
+
+    //producers of aggregators can be either join or select/scan
+    Sum sum_op(schema, agg_schema, function, &_producer);
     _sum.Swap(sum_op);
 }
 

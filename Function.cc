@@ -222,7 +222,11 @@ void Function :: GrowFromParseTree (FuncOperator* parseTree, Schema& mySchema) {
 	Type resType = RecursivelyBuild (parseTree, mySchema);
 
 	// remember if we get back an integer or if we get a double
-	if (resType == Integer)	returnsInt = 1;
+	if (resType == String || resType == Name) {
+		cout << "Wrong aggregate attribute" << endl;
+		exit(-1);
+	}
+	else if (resType == Integer) returnsInt = 1;
 	else returnsInt = 0;
 }
 

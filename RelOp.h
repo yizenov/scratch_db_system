@@ -206,6 +206,9 @@ private:
 	// function to compute
 	Function compute;
 
+	// flag to detect if sum is computed
+	bool isComputed;
+
 	// operator generating data
 	RelationalOp* producer;
 
@@ -215,7 +218,7 @@ public:
 		RelationalOp* _producer);
 	virtual ~Sum();
 
-	virtual bool GetNext(Record& _record) {}
+	virtual bool GetNext(Record& _record);
 
 	void Swap(Sum& _other);
 
