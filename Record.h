@@ -3,6 +3,9 @@
 
 #include <cstdio>
 #include <iostream>
+#include <vector>
+
+#include "Schema.h"
 
 using std::ostream;
 
@@ -46,6 +49,9 @@ public:
 	//returns the size of the record, that is, the first integer in bits
 	int GetSize();
 
+	//creating new content for current record object
+    void MakeRecord(vector<string> &results, std::vector<Attribute>& attrs, int attr_nbr);
+
 	//copy bits of length b_len into the current record
 	void CopyBits(char *bits, int b_len);
 
@@ -78,6 +84,7 @@ public:
 
 	// print record content based on schema
     ostream& print(ostream& _os, Schema& mySchema);
+	ostream& printSet(ostream& _os, Schema& mySchema, const int *whichAtts);
 };
 
 #endif //_RECORD_H

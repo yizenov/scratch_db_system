@@ -138,6 +138,56 @@ int Record :: GetSize() {
 	else return *((int *) bits);
 }
 
+void Record :: MakeRecord(vector<string> &results, vector<Attribute>& attrs, int attr_nbr) {
+
+	delete [] bits;
+	bits = NULL;
+
+	int currentPosInRec = sizeof (int) * (attr_nbr + 1);
+	char* recSpace = new char[PAGE_SIZE];
+	//char* space = new char[PAGE_SIZE];
+
+	for (int i = 0; i < attr_nbr; i++) {
+
+		int len = results[i].length() + 1;
+		char *space = new char[len];
+		strcpy(space, results[i].c_str());
+
+		((int *) recSpace)[i + 1] = currentPosInRec;
+
+		if (attrs[i].type == Integer) {
+			*((int *) &(recSpace[currentPosInRec])) = atoi(space);
+			currentPosInRec += sizeof(int);
+		} else if (attrs[i].type == Float) {
+			*((double *) &(recSpace[currentPosInRec])) = atof(space);
+			currentPosInRec += sizeof(double);
+		} else if (attrs[i].type == String) {
+
+			// align things to the size of an integer if needed
+			if (len % sizeof(int) != 0) { //TODO: ??
+				len += sizeof(int) - (len % sizeof(int));
+			}
+
+			strcpy(&(recSpace[currentPosInRec]), space);
+			currentPosInRec += len;
+		}
+
+		delete[] space;
+	}
+
+	((int *) recSpace)[0] = currentPosInRec;
+
+	bits = new char[currentPosInRec];
+	memcpy(bits, recSpace, currentPosInRec);
+
+//	char *res = new char[currentPosInRec];
+//	memcpy (res, recSpace, currentPosInRec);
+//	_record.Consume(res);
+//	delete [] res;
+
+	delete [] recSpace;
+}
+
 void Record :: CopyBits(char* _bits, int b_len) {
 	delete [] bits;
 	bits = new char[b_len];
@@ -435,4 +485,44 @@ ostream& Record :: print(ostream& _os, Schema& mySchema) {
 	_os << '}';
 
 	return _os;
+}
+
+
+ostream& Record :: printSet(ostream& _os, Schema& mySchema, const int *whichAtts) {
+    int n = mySchema.GetNumAtts();
+    vector<Attribute> atts = mySchema.GetAtts();
+
+    // loop through all of the attributes
+    for (int i = 0; i < n; i++) {
+
+        // use the i^th slot at the head of the record to get the
+        // offset to the correct attribute in the record
+        int idx = whichAtts[i];
+        int pointer = ((int *) bits)[idx + 1];
+
+        // here we determine the type, which given in the schema;
+        // depending on the type we then print out the contents
+        // first is integer
+        if (atts[i].type == Integer) {
+            int *myInt = (int *) &(bits[pointer]);
+            _os << *myInt;
+        }
+            // then is a double
+        else if (atts[i].type == Float) {
+            double *myDouble = (double *) &(bits[pointer]);
+            _os << *myDouble;
+        }
+            // then is a character string
+        else if (atts[i].type == String) {
+            char *myString = (char *) &(bits[pointer]);
+            _os << myString;
+        }
+
+        // print out a comma as needed to make things pretty
+        if (i != n - 1) {
+            _os << ", ";
+        }
+    }
+
+    return _os;
 }

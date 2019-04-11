@@ -38,6 +38,7 @@ public:
 	// removes one (any) instance of the given key from the map...
 	// returns a 1 on success and a zero if the given key was not found
 	int Remove (Key &findMe, Key &putKeyHere, Data &putDataHere);
+	int RemoveRecord (Key &findMe, Key &putKeyHere, Data &putDataHere, OrderMaker &comparator);
 
 	// attempts to locate the given key
 	// returns 1 if it is, 0 otherwise
@@ -49,6 +50,7 @@ public:
 	// returned.  "Plays nicely" with IsThere in the sense that if IsThere found
 	// an item, Find will immediately return that item w/o having to locate it
 	Data &Find (Key &findMe);
+	Data &FindRecord (Key &findMe, OrderMaker &comparator);
 
 	// swap two of the maps
 	void Swap (InefficientMap &withMe);

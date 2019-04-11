@@ -367,29 +367,10 @@ bool Sum::GetNext(Record& _record) {
     else
         res_str += std::to_string(sum_value2);
 
-    int currentPosInRec = sizeof (int) * (schemaOut.GetNumAtts() + 1);
-    char* recSpace = new char[PAGE_SIZE];
+    vector<string> data;
+    data.emplace_back(res_str);
+    _record.MakeRecord(data, schemaOut.GetAtts(), schemaOut.GetNumAtts());
 
-    char* space = new char[res_str.length() + 1];
-    strcpy(space, res_str.c_str());
-
-    ((int *) recSpace)[0 + 1] = currentPosInRec;
-    if (schemaOut.GetAtts()[0].type == Integer) {
-        *((int *) &(recSpace[currentPosInRec])) = atoi (space);
-        currentPosInRec += sizeof (int);
-    } else if (schemaOut.GetAtts()[0].type == Float) {
-        *((double *) &(recSpace[currentPosInRec])) = atof (space);
-        currentPosInRec += sizeof (double);
-    }
-    ((int *) recSpace)[0] = currentPosInRec;
-    char *res = new char[currentPosInRec];
-    memcpy (res, recSpace, currentPosInRec);
-
-    _record.Consume(res);
-
-    delete [] res;
-    delete [] space;
-    delete [] recSpace;
     isComputed = true;
 
     return true;
@@ -410,11 +391,69 @@ void Sum::Swap(Sum &_other) {
 
 GroupBy::GroupBy(Schema& _schemaIn, Schema& _schemaOut, OrderMaker& _groupingAtts, Function& _compute,
     RelationalOp* _producer) : schemaIn(_schemaIn), schemaOut(_schemaOut), groupingAtts(_groupingAtts),
-    compute(_compute), producer(_producer) {
-    //TODO: how do we compute this?
+    compute(_compute), producer(_producer) { //, schemaOriginOut(_schemaOut)
+
+    isComputed = false;
 }
 
 GroupBy::~GroupBy() {}
+
+bool GroupBy::GetNext(Record& _record) {
+    if (!isComputed) {
+
+        Type agg_type = Float;
+
+        while (producer->GetNext(_record)) {
+            ComplexKeyify<Record> recordToFind(_record);
+            if (recordStats.IsThereRecord(recordToFind, groupingAtts) == 0) {
+                int temp1 = 0;
+                double temp2 = 0;
+                compute.Apply(_record, temp1, temp2);
+                SwapDouble val(temp2);
+                recordStats.Insert(recordToFind, val);
+            } else {
+                int temp1 = 0;
+                double temp2 = 0;
+                agg_type = compute.Apply(_record, temp1, temp2);
+                recordStats.FindRecord(recordToFind, groupingAtts).GetData() += temp2;
+            }
+        }
+        isComputed = true;
+        recordStats.MoveToStart();
+
+        for (int i = 0; i < groupingAtts.numAtts; i++)
+            schemaOriginOut.GetAtts().emplace_back(schemaIn.GetAtts()[groupingAtts.whichAtts[i]]);
+    }
+
+    if (recordStats.Length() < 1) {
+        return false;
+    }
+
+    //TODO: multiple attr grouping - use case
+    ComplexKeyify<Record> find_key = recordStats.CurrentKey();
+
+    // removing returning tuple
+    ComplexKeyify<Record> key;
+    SwapDouble value;
+    if (recordStats.RemoveRecord(find_key, key, value, groupingAtts) == 1) {
+        //return first tuple
+        string res_str;
+        if (schemaOut.GetAtts()[0].type == Integer) //TODO: this case is not covered so far
+            res_str = std::to_string(value.GetData());
+        else
+            res_str += std::to_string(value.GetData());
+        vector<string> data;
+        data.emplace_back(res_str);
+        stringstream os;
+        key.GetData().printSet(os, schemaOriginOut, groupingAtts.whichAtts);
+        string grouping_attr = os.str();
+        data.emplace_back(grouping_attr);
+        _record.MakeRecord(data, schemaOut.GetAtts(), schemaOut.GetNumAtts());
+        return true;
+    } else {
+        return false;
+    }
+}
 
 ostream& GroupBy::print(ostream& _os) {
     _os << "GROUP BY [ " << groupingAtts << " ]" << endl;

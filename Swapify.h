@@ -26,6 +26,7 @@ public:
 	Swapify (const Type castFromMe);
 	void CopyFrom(Swapify& FromMe);
 	operator Type();
+	Type& GetData() { return data; };
 
 	Swapify ();
 	virtual ~Swapify ();

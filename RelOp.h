@@ -234,6 +234,7 @@ private:
 	Schema schemaIn;
 	// schema of records output by operator
 	Schema schemaOut;
+    Schema schemaOriginOut;
 
 	// grouping attributes
 	OrderMaker groupingAtts;
@@ -243,13 +244,20 @@ private:
 	// operator generating data
 	RelationalOp* producer;
 
+	//TODO: handles only double counters
+    // for maintaining distinct key values
+    InefficientMap<ComplexKeyify<Record>, SwapDouble> recordStats;
+
+    // flag to detect if sum is computed
+    bool isComputed;
+
 public:
     GroupBy() {}
 	GroupBy(Schema& _schemaIn, Schema& _schemaOut, OrderMaker& _groupingAtts,
 		Function& _compute,	RelationalOp* _producer);
 	virtual ~GroupBy();
 
-	virtual bool GetNext(Record& _record) {}
+	virtual bool GetNext(Record& _record);
 
 	void Swap(GroupBy& _other);
 

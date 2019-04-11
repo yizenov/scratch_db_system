@@ -69,8 +69,8 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
         if (join_check) {
             pre_out_operator = CreateGroupBy(*_groupingAtts, *_finalFunction, *_attsToSelect, *pre_out_operator);
         } else if (selectionMap.Length() == 1) {
-            Select single_selection = selectionMap.CurrentData();
-            pre_out_operator = CreateGroupBy(*_groupingAtts, *_finalFunction, *_attsToSelect, single_selection);
+            single_selection = &selectionMap.CurrentData();
+            pre_out_operator = CreateGroupBy(*_groupingAtts, *_finalFunction, *_attsToSelect, *single_selection);
         } else if (scanMap.Length() == 1) {
             Scan single_scan = scanMap.CurrentData();
             pre_out_operator = CreateGroupBy(*_groupingAtts, *_finalFunction, *_attsToSelect, single_scan);
@@ -258,8 +258,6 @@ GroupBy* QueryCompiler::CreateGroupBy(NameList& _groupingAtts, FuncOperator& _fi
         current_group = current_group->next;
     }
 
-    Schema group_by_schema(attrs, attr_types, distincts);
-
     // group by has to have an aggregator
     FuncOperator* current_agg_func = &_finalFunction;
     if (!current_agg_func) {
@@ -267,10 +265,40 @@ GroupBy* QueryCompiler::CreateGroupBy(NameList& _groupingAtts, FuncOperator& _fi
         exit(-1);
     }
     Function function;
-    //function.GrowFromParseTree(&_finalFunction, group_by_schema);
+    function.GrowFromParseTree(&_finalFunction, *root_schema);
+
+    //TODO: adjust to cover 10.sql query
+    //Schema group_by_schema(attrs, attr_types, distincts);
+    Schema group_by_schema;
+
+    Attribute agg_attribute;
+    if (function.GetOperatorNumbers() == 1) {
+        int attr_index = function.GetArithmetic()->recInput;
+        agg_attribute.name = root_schema->GetAtts()[attr_index].name;
+        agg_attribute.type = function.GetAttType();
+    }
+    group_by_schema.GetAtts().emplace_back(agg_attribute);
+
+    for (int i = 0; i < attrs.size(); i++) {
+        Attribute new_attr;
+        new_attr.name = attrs[i];
+        if (attr_types[i] == "Integer") new_attr.type = Integer;
+        else if (attr_types[i] == "Float") new_attr.type = Float;
+        else if (attr_types[i] == "String") new_attr.type = String;
+        else {
+            cout << "incorrect project attribute in group by query" << endl;
+            exit(-1);
+        };
+        new_attr.noDistinct = distincts[i];
+        group_by_schema.GetAtts().emplace_back(new_attr);
+    }
 
     int no_cols = (int) col_indices.size();
-    OrderMaker orderMaker(group_by_schema, &col_indices[0], no_cols);
+    int indicies[no_cols];
+    for (int i = 0; i < no_cols; i++)
+        indicies[i] = i + 1; // first attribute is an aggregator
+    OrderMaker orderMaker(group_by_schema, indicies, no_cols);
+    //OrderMaker orderMaker(group_by_schema, &col_indices[0], no_cols);
 
     GroupBy *group_by_operator = new GroupBy(*root_schema, group_by_schema, orderMaker, function, &_producer);
     return group_by_operator;
