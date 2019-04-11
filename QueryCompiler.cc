@@ -119,8 +119,13 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
         if (_distinctAtts && project_check) { // distinct operator
             Project* project_op = dynamic_cast<Project*>(pre_out_operator);
             int indicies[project_op->GetNumAttsOutput()];
-            for (int i = 0; i < project_op->GetNumAttsOutput(); i++)
+            //TODO: error in comparison if original schema is passed
+            for (int i = 0; i < project_op->GetNumAttsOutput(); i++) {
+                //int col_idx = project_op->GetKeepAtts()[i];
+                //indicies[i] = col_idx; // i;
                 indicies[i] = i;
+            }
+            //OrderMaker orderMaker(project_op->GetSchemaIn(), indicies, project_op->GetNumAttsOutput());
             OrderMaker orderMaker(project_op->GetSchemaOut(), indicies, project_op->GetNumAttsOutput());
             pre_out_operator = new DuplicateRemoval(pre_out_operator->GetSchemaOut(), pre_out_operator, orderMaker);
         }
@@ -202,11 +207,10 @@ void QueryCompiler::CreateAggregators(FuncOperator& _finalFunction, RelationalOp
     schema = _producer.GetSchemaOut();
     function.GrowFromParseTree(&_finalFunction, schema);
 
-    //TODO: adjust to cover 9.sql query
     Attribute agg_attribute;
-    if (function.GetOperatorNumbers() == 1) {
+    if (function.GetOperatorNumbers() > 0) { //== 1
         int attr_index = function.GetArithmetic()->recInput;
-        agg_attribute.name = schema.GetAtts()[attr_index].name;
+        agg_attribute.name = "summation"; // schema.GetAtts()[attr_index].name;
         agg_attribute.type = function.GetAttType();
     }
 
@@ -267,14 +271,13 @@ GroupBy* QueryCompiler::CreateGroupBy(NameList& _groupingAtts, FuncOperator& _fi
     Function function;
     function.GrowFromParseTree(&_finalFunction, *root_schema);
 
-    //TODO: adjust to cover 10.sql query
     //Schema group_by_schema(attrs, attr_types, distincts);
     Schema group_by_schema;
 
     Attribute agg_attribute;
-    if (function.GetOperatorNumbers() == 1) {
+    if (function.GetOperatorNumbers() > 0) { //== 1
         int attr_index = function.GetArithmetic()->recInput;
-        agg_attribute.name = root_schema->GetAtts()[attr_index].name;
+        agg_attribute.name = "summation"; //root_schema->GetAtts()[attr_index].name;
         agg_attribute.type = function.GetAttType();
     }
     group_by_schema.GetAtts().emplace_back(agg_attribute);
@@ -296,9 +299,8 @@ GroupBy* QueryCompiler::CreateGroupBy(NameList& _groupingAtts, FuncOperator& _fi
     int no_cols = (int) col_indices.size();
     int indicies[no_cols];
     for (int i = 0; i < no_cols; i++)
-        indicies[i] = i + 1; // first attribute is an aggregator
-    OrderMaker orderMaker(group_by_schema, indicies, no_cols);
-    //OrderMaker orderMaker(group_by_schema, &col_indices[0], no_cols);
+        indicies[i] = col_indices[i]; // i + 1; // first attribute is an aggregator
+    OrderMaker orderMaker(*root_schema, indicies, no_cols);
 
     GroupBy *group_by_operator = new GroupBy(*root_schema, group_by_schema, orderMaker, function, &_producer);
     return group_by_operator;

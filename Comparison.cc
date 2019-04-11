@@ -256,6 +256,7 @@ int OrderMaker :: Run(Record& left, Record& right) {
 				break;
 			}
 			default: {
+                //TODO: error if original schema is passed
 				int sc = strcmp (val1, val2);
 				if (sc != 0) return sc;
 

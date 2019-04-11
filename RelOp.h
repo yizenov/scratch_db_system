@@ -128,8 +128,10 @@ public:
 
 	virtual bool GetNext(Record& _record);
 
+	int* GetKeepAtts() { return keepMe; }
 	int GetNumAttsOutput() { return numAttsOutput; }
 	Schema& GetSchemaOut() { return schemaOut; }
+    Schema& GetSchemaIn() { return schemaIn; }
 	void SetProducer(RelationalOp* _producer) { producer = _producer; }
 
 	void Swap(Project& _other);
