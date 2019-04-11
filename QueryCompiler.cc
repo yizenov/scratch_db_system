@@ -1,7 +1,7 @@
-#include <string>
-#include <bits/stdc++.h>
-
 #include "QueryCompiler.h"
+
+#include "TwoWayList.h"
+#include "InefficientMap.cc" //TODO:undefined reference (forced because of using 'template' in there)
 #include "QueryOptimizer.h"
 #include "Schema.h"
 #include "ParseTree.h"
@@ -10,9 +10,10 @@
 #include "Comparison.h"
 #include "Function.h"
 #include "RelOp.h"
-#include "TwoWayList.cc"
-#include "InefficientMap.cc"
 #include "Config.h"
+
+#include <string>
+#include <bits/stdc++.h>
 
 using namespace std;
 
@@ -116,7 +117,12 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
         }
 
         if (_distinctAtts && project_check) { // distinct operator
-            pre_out_operator = new DuplicateRemoval(pre_out_operator->GetSchemaOut(), pre_out_operator);
+            Project* project_op = dynamic_cast<Project*>(pre_out_operator);
+            int indicies[project_op->GetNumAttsOutput()];
+            for (int i = 0; i < project_op->GetNumAttsOutput(); i++)
+                indicies[i] = i;
+            OrderMaker orderMaker(project_op->GetSchemaOut(), indicies, project_op->GetNumAttsOutput());
+            pre_out_operator = new DuplicateRemoval(pre_out_operator->GetSchemaOut(), pre_out_operator, orderMaker);
         }
     } else {
         cout << "unsupported operator was provided" << endl;

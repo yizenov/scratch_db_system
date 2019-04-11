@@ -1,4 +1,7 @@
 #include "ComplexSwapify.h"
+#include "Swap.h"
+
+#include <iostream>
 
 using namespace std;
 
@@ -19,6 +22,16 @@ ComplexSwapify <Type> :: ~ComplexSwapify () {
 template <class Type>
 ComplexSwapify <Type> :: operator Type () {
     return data;
+}
+
+template <class Type> int
+ComplexSwapify <Type> :: IsEqual(ComplexSwapify &checkMe) {
+    return (data == checkMe.data);
+}
+
+template <class Type> int
+ComplexSwapify <Type> :: LessThan (ComplexSwapify &checkMe) {
+    return (data < checkMe.data);
 }
 
 template <class Type> void

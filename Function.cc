@@ -3,11 +3,13 @@
 #include <cstring>
 #include <string>
 
+#include "Function.h"
+
 #include "Config.h"
 #include "Schema.h"
 #include "ParseTree.h"
 #include "Record.h"
-#include "Function.h"
+#include "Swap.h"
 
 using namespace std;
 

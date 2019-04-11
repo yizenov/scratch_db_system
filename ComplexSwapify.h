@@ -1,8 +1,6 @@
 #ifndef _COMPLEX_SWAPIFY_H
 #define _COMPLEX_SWAPIFY_H
 
-#include "Schema.h"
-
 template <class Type>
 class ComplexSwapify {
 private:
@@ -14,6 +12,9 @@ public:
     void CopyFrom(ComplexSwapify& FromMe);
     operator Type();
     Type& GetData() { return data; };
+
+    int IsEqual(ComplexSwapify &checkMe);
+    int LessThan(ComplexSwapify &checkMe);
 
     ComplexSwapify ();
     virtual ~ComplexSwapify ();

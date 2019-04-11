@@ -5,9 +5,9 @@
 #include <bits/stdc++.h>
 #include <limits.h>
 
-#include "Schema.h"
-#include "Comparison.h"
 #include "QueryOptimizer.h"
+#include "Schema.h"
+#include "DBFile.h"
 
 using namespace std;
 

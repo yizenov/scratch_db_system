@@ -1,15 +1,17 @@
 #ifndef _QUERY_OPTIMIZER_H
 #define _QUERY_OPTIMIZER_H
 
-#include "Schema.h"
 #include "Catalog.h"
-#include "ParseTree.h"
 #include "RelOp.h"
+#include "ParseTree.h"
+#include "Comparison.h"
 
 #include <string>
 #include <vector>
 #include <unordered_map>
 
+//class DBFile;
+//class Scan;
 
 // data structure used by the optimizer to compute join ordering
 struct OptimizationTree {
@@ -38,7 +40,7 @@ public:
 
     void ParsePlan(string& plan, vector<string>& elements);
 	void BuildTree(vector<string>& plan, int& start, OptimizationTree* _root, vector<OptimizationTree*>& values,
-            vector<string>& _table_names, vector<int>& _table_tuples, unordered_map<string, Schema>& _schema_info);
+            vector<string>& _table_names, vector<int>& _table_tuples, std::unordered_map<string, Schema>& _schema_info);
 
     unsigned long int EstimateCardinality(CNF& cnf, Schema& schema, AndList& _predicate);
     unsigned long int JoinSizeEstimation(CNF& predicate, Schema& schemaLeft, Schema& schemaRight, Schema& schemaOut);
@@ -46,9 +48,9 @@ public:
             vector<vector<int>>& permutations);
     void find_optimal_plan(vector<int>& indices, AndList& _predicate, OptimizationTree* _root,
             vector<string>& _table_names, vector<int>& _table_tuples, vector<int>& _indicators,
-                           unordered_map<string, string>& trees,
-            unordered_map<string, Schema>& _schema_info,
-            unordered_map<string, pair<unsigned long int, vector<int>>>& plan_info);
+                           std::unordered_map<string, string>& trees,
+            std::unordered_map<string, Schema>& _schema_info,
+            std::unordered_map<string, std::pair<unsigned long int, vector<int>>>& plan_info);
 };
 
 #endif // _QUERY_OPTIMIZER_H

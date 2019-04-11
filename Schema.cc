@@ -2,6 +2,10 @@
 
 #include "Schema.h"
 
+#include "Swap.h"
+
+#include <iostream>
+
 using namespace std;
 
 Attribute::Attribute() : name(""), type(Name), noDistinct(0) {}

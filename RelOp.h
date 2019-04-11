@@ -1,17 +1,26 @@
 #ifndef _REL_OP_H
 #define _REL_OP_H
 
-#include <iostream>
-#include <fstream>
-
-#include "Swap.h"
-#include "Config.h"
-#include "Schema.h"
-#include "Record.h"
+//TODO: replace all with forward declaration
+//#include "Schema.h"
 #include "DBFile.h"
 #include "Function.h"
 #include "Comparison.h"
 
+#include "Keyify.h"
+#include "ComplexKeyify.h"
+#include "Swapify.h"
+#include "InefficientMap.h"
+
+#include <iostream>
+#include <fstream>
+
+using std::string;
+using std::ostream;
+
+class Record;
+//class DBFile; //TODO:use smart pointers
+class Schema;
 
 class RelationalOp {
 protected:
@@ -167,12 +176,18 @@ private:
 	// operator generating data
 	RelationalOp* producer;
 
+	// for comparing two records
+    OrderMaker compareRecords;
+
+	// for maintaining distinct key values
+    InefficientMap<ComplexKeyify<Record>, SwapInt> distinctRecords;
+
 public:
     DuplicateRemoval() {}
-	DuplicateRemoval(Schema& _schema, RelationalOp* _producer);
+	DuplicateRemoval(Schema& _schema, RelationalOp* _producer, OrderMaker& _compareRecords);
 	virtual ~DuplicateRemoval();
 
-	virtual bool GetNext(Record& _record) {}
+	virtual bool GetNext(Record& _record);
 
 	void Swap(DuplicateRemoval& _other);
 
@@ -247,7 +262,7 @@ private:
 
 	// output file where to write the result records
 	string outFile;
-    ofstream outStream; // for outputting the query results
+    std::ofstream outStream; // for outputting the query results
 
 	// operator generating data
 	RelationalOp* producer;

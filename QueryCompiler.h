@@ -13,12 +13,7 @@
 #include "ParseTree.h"
 #include "QueryOptimizer.h"
 #include "RelOp.h"
-#include "InefficientMap.h"
-#include "TwoWayList.h"
 #include "Keyify.h"
-#include "Config.h"
-
-#include <unordered_set>
 
 
 class QueryCompiler {
@@ -26,8 +21,8 @@ private:
 	Catalog* catalog;
 	QueryOptimizer* optimizer;
 
-	ScanMap scanMap;
-	SelectionMap selectionMap;
+	InefficientMap<KeyString, Scan> scanMap;
+	InefficientMap<KeyString, Select> selectionMap;
 
 public:
 	QueryCompiler(Catalog& _catalog, QueryOptimizer& _optimizer);

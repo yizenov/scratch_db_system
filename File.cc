@@ -7,10 +7,11 @@
 #include <iostream>
 #include <string>
 
+#include "File.h"
 #include "Config.h"
 #include "Record.h"
-#include "TwoWayList.cc"
-#include "File.h"
+#include "TwoWayList.cc" //TODO: undefined reference (forced because of using 'template' in there)
+#include "Swap.h"
 
 using namespace std;
 

@@ -2,8 +2,14 @@
 #define _INEFFICIENT_MAP_H
 
 #include "TwoWayList.h"
-#include "Keyify.h"
-#include "RelOp.h"
+#include "ComplexKeyify.cc" //TODO:undefined reference
+//#include "Keyify.h"
+//#include "ComplexSwapify.h"
+#include "Swapify.cc" //TODO:undefined reference
+//#include "Schema.h"
+#include "Comparison.h"
+
+//class Swapify;
 
 template <class Key, class Data>
 class InefficientMap {
@@ -13,8 +19,8 @@ public:
 	typedef Data dataType;
 
 	// constructor & destructor
-	InefficientMap() {}
-	virtual ~InefficientMap() {}
+	InefficientMap();
+	virtual ~InefficientMap();
 
 	// remove all the content
 	void Clear(void);
@@ -36,6 +42,7 @@ public:
 	// attempts to locate the given key
 	// returns 1 if it is, 0 otherwise
 	int IsThere (Key &findMe);
+    int IsThereRecord (Key &findMe, OrderMaker &comparator);
 
 	// returns a reference to the data associated with the given search key
 	// if the key is not there, then a garbage (newly initialized) Data item is
@@ -83,8 +90,9 @@ private:
 	TwoWayList <Node> container;
 };
 
-typedef InefficientMap<KeyString, Schema> SchemaMap;
-typedef InefficientMap<KeyString, Scan> ScanMap;
-typedef InefficientMap<KeyString, Select> SelectionMap;
+//typedef InefficientMap<KeyString, Schema> SchemaMap;
+//typedef InefficientMap<KeyString, Scan> ScanMap;
+//typedef InefficientMap<KeyString, Select> SelectionMap;
+//typedef InefficientMap<KeyRecord, KeyInt> RecordMap;
 
 #endif //_INEFFICIENT_MAP_H

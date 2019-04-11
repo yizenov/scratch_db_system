@@ -6,8 +6,8 @@
 #include "Config.h"
 #include "Schema.h"
 #include "ParseTree.h"
-#include "Record.h"
 
+class Record;
 
 struct Arithmetic {
 	ArithOperator myOp;

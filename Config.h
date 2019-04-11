@@ -1,8 +1,6 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-using namespace std;
-
 
 /* This file contains global definitions used throughout the project.
  */

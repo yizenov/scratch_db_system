@@ -3,25 +3,24 @@ project(db_systems)
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(SOURCE_FILES Swap.h
+set(SOURCE_FILES Swap.h Config.h ParseTree.h
         Swapify.h Swapify.cc
         ComplexSwapify.h ComplexSwapify.cc
-        Keyify.h Keyify.cc
         TwoWayList.h TwoWayList.cc
-        InefficientMap.h InefficientMap.cc
-        EfficientMap.h EfficientMap.cc
-        Config.h
+        Keyify.h Keyify.cc
         Schema.h Schema.cc
         Catalog.h Catalog.cc
-        ParseTree.h
-        QueryCompiler.h QueryCompiler.cc
-        QueryOptimizer.h QueryOptimizer.cc
         Record.h Record.cc
-        RelOp.h RelOp.cc
-        Function.h Function.cc
+        ComplexKeyify.h ComplexKeyify.cc
+        InefficientMap.h InefficientMap.cc
+        EfficientMap.h EfficientMap.cc
         File.h File.cc
         DBFile.h DBFile.cc
         Comparison.h Comparison.cc
+        Function.h Function.cc
+        RelOp.h RelOp.cc
+        QueryOptimizer.h QueryOptimizer.cc
+        QueryCompiler.h QueryCompiler.cc
         main.cc)
 
 add_executable(db_systems ${SOURCE_FILES})

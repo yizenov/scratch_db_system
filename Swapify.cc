@@ -1,7 +1,7 @@
-#ifndef _SWAPIFY_CC_
-#define _SWAPIFY_CC_
+#include <iostream>
 
 #include "Swapify.h"
+#include "Swap.h"
 
 template <class Type>
 Swapify <Type> :: Swapify () {
@@ -44,5 +44,3 @@ operator<<(ostream& output, const Swapify<Type>& _s) {
 
 	return output;
 }
-
-#endif //_SWAPIFY_CC_

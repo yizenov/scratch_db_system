@@ -1,5 +1,7 @@
 #include "Keyify.h"
 
+#include "Swap.h"
+
 using namespace std;
 
 template <class Type>

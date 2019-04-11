@@ -1,6 +1,8 @@
 #include "Catalog.h"
-#include "TwoWayList.cc"
-#include "InefficientMap.cc"
+
+#include "InefficientMap.cc"  //TODO:undefined reference (forced because of using 'template' in there)
+#include "Keyify.cc" //TODO:undefined reference (forced because of using 'template' in there)
+#include "ComplexSwapify.cc" //TODO:undefined reference (forced because of using 'template' in there)
 
 #include <bits/stdc++.h>
 
@@ -422,7 +424,7 @@ void Catalog::UploadSchemas() {
     cout << "database is not connected." << endl;
   } else {
 
-    schema_data_ = new SchemaMap(); // TODO: avoid NEW
+    schema_data_ = new InefficientMap<KeyString, Schema>(); // TODO: avoid NEW
 
     query = "SELECT * FROM " DB_TABLE_LIST ";";
     sqlite3_prepare_v2(catalog_db, query.c_str(), -1, &stmt, nullptr);

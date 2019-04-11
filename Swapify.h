@@ -13,8 +13,8 @@
 
 #include <string>
 
-using namespace std;
-
+using std::string;
+using std::ostream;
 
 template <class Type>
 class Swapify {

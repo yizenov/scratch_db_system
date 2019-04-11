@@ -7,6 +7,7 @@
 #include "Schema.h"
 #include "File.h"
 
+using std::ostream;
 
 class DBFile {
 private:

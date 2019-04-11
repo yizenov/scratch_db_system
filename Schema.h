@@ -2,11 +2,13 @@
 #define _SCHEMA_H
 
 #include <vector>
-#include <iostream>
+#include <string>
 
-#include "Swap.h"
 #include "Config.h"
 
+using std::string;
+using std::vector;
+using std::ostream;
 
 /* Data structure for schema attributes:
  * name of attribute

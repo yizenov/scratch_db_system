@@ -37,7 +37,7 @@
 
 #include <string>
 
-using namespace std;
+using std::string;
 
 template <class Type>
 class Keyify {

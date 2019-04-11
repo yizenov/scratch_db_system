@@ -1,6 +1,16 @@
 
 #include "RelOp.h"
 
+#include "Swap.h"
+#include "Config.h"
+#include "Record.h"
+#include "DBFile.h"
+#include "InefficientMap.cc" //TODO:undefined reference (forced because of using 'template' in there)
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
 using namespace std;
 
 ostream& operator<<(ostream& _os, RelationalOp& _op) {
@@ -302,13 +312,22 @@ void Join::Swap(Join &_other) {
     SWAP(right, _other.right);
 }
 
-DuplicateRemoval::DuplicateRemoval(Schema& _schema, RelationalOp* _producer) :
-    schema(_schema), producer(_producer) {
-    //TODO: get the distinct values only
-    //TODO: get attr name
-}
+DuplicateRemoval::DuplicateRemoval(Schema& _schema, RelationalOp* _producer, OrderMaker& _compareRecords) :
+    schema(_schema), producer(_producer), compareRecords(_compareRecords) {}
 
 DuplicateRemoval::~DuplicateRemoval() {}
+
+bool DuplicateRemoval::GetNext(Record& _record) {
+    while (producer->GetNext(_record)) {
+        ComplexKeyify<Record> recordToFind(_record);
+        if (distinctRecords.IsThereRecord(recordToFind, compareRecords) == 0) {
+            SwapInt val(0);
+            distinctRecords.Insert(recordToFind, val);
+            return true;
+        }
+    }
+    return false;
+}
 
 ostream& DuplicateRemoval::print(ostream& _os) {
     string attr_name = schema.GetAtts()[0].name;

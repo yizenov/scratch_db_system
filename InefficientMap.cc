@@ -1,8 +1,18 @@
 #include "InefficientMap.h"
-#include "Keyify.cc"
-#include "RelOp.h"
+#include "TwoWayList.cc" //TODO:undefined reference (forced because of using 'template' in there)
+#include "Comparison.h"
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
+
+template <class Key, class Data>
+InefficientMap <Key, Data> :: InefficientMap () { }
+
+template <class Key, class Data>
+InefficientMap <Key, Data> :: ~InefficientMap () { }
 
 template <class Key, class Data> void
 InefficientMap <Key, Data> :: SuckUp (InefficientMap &suckMe) {
@@ -88,6 +98,30 @@ InefficientMap <Key, Data> :: IsThere (Key &findMe) {
 		container.Advance ();
 	}
 	return 0;
+}
+
+template <class Key, class Data> int
+InefficientMap <Key, Data> :: IsThereRecord (Key &findMe, OrderMaker &comparator) {
+
+    static Data garbage;
+    int numRight = container.RightLength();
+    while (container.RightLength() != 0) {
+        Record left = container.Current().key.GetData();
+        Record right = findMe.GetData();
+		if (comparator.Run(left, right) == 0)
+            return 1;
+        container.Advance();
+    }
+
+    container.MoveToStart();
+    while (container.RightLength() != numRight) {
+		Record left = container.Current().key.GetData();
+		Record right = findMe.GetData();
+		if (comparator.Run(left, right) == 0)
+			return 1;
+        container.Advance();
+    }
+    return 0;
 }
 
 template <class Key, class Data> void

@@ -3,7 +3,10 @@
 
 #include <cstdio>
 #include <iostream>
-#include "Schema.h"
+
+using std::ostream;
+
+class Schema;
 
 
 /* Record data structure. Data are stored in bits.

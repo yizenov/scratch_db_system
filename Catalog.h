@@ -1,13 +1,18 @@
 #ifndef _CATALOG_H
 #define _CATALOG_H
 
-#include <set>
 #include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
 
 #include "InefficientMap.h"
-#include "TwoWayList.h"
+#include "Keyify.h"
+#include "Schema.h"
 #include "sqlite3.h"
 
+using std::string;
+using std::vector;
 
 class Catalog {
 private:
@@ -17,7 +22,7 @@ private:
 	 * Avoid linear traversals when possible.
 	 */
 
-    SchemaMap *schema_data_;
+    InefficientMap<KeyString, Schema> *schema_data_;
 	bool connection_status;
     char *error_msg;
     sqlite3 *catalog_db;

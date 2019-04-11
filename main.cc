@@ -4,7 +4,6 @@
 #include "Catalog.h"
 #include "QueryCompiler.h"
 #include "QueryOptimizer.h"
-#include "RelOp.h"
 extern "C" {
     #include "QueryParser.h"
 }
