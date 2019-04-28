@@ -246,11 +246,24 @@ Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
 
     //TODO: is a function for union two sketches provided?
     schemaOut = _schemaOut;
+    attributes = new int[schemaLeft.GetNumAtts() + schemaRight.GetNumAtts()];
+    int index = 0;
 
-    for (auto attr : schemaLeft.GetAtts())
-        schemaOut.GetAtts().emplace_back(attr);
-    for (auto attr : schemaRight.GetAtts())
-        schemaOut.GetAtts().emplace_back(attr);
+    auto left_attributes = schemaLeft.GetAtts();
+    for (int i = 0; i < left_attributes.size(); i++) {
+        schemaOut.GetAtts().emplace_back(left_attributes[i]);
+        attributes[index] = i;
+        index++;
+    }
+
+    rightSideIndexStart = index; // start index of right side schema
+
+    auto right_attributes = schemaRight.GetAtts();
+    for (int i = 0; i < right_attributes.size(); i++) {
+        schemaOut.GetAtts().emplace_back(right_attributes[i]);
+        attributes[index] = i;
+        index++;
+    }
 
     // assuming two relations join only
     Comparison comparison = predicate.andList[0];
@@ -292,9 +305,110 @@ Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
 
     string _table_path = "no path"; // this is empty since this is an intermediate object
     schemaOut.SetTablePath(_table_path);
+
+    // TODO: check if there any case of having multiple joins
+    // logic of join algorithm selection is needed here
+//    if (comparison.op == Equals) {
+//        joinType = NLJ; // temporarily
+//        // TODO: choose HJ or SHJ
+//    } else {
+        joinType = NLJ; // by default
+        isInnerTableExists = false;
+    //}
 }
 
 Join::~Join() {}
+
+bool Join::GetNext(Record& _record) {
+    // both, either or neither side can be selection/scan/join operator
+    if (joinType == SHJ) {
+        return SHJoin(_record);
+    } else if (joinType == HJ) {
+        return HJoin(_record);
+    }
+    return NLJoin(_record);
+}
+
+bool Join::NLJoin(Record& _origin_record) {
+    if (!isInnerTableExists) {
+        isInnerTableExists = true;
+
+        // need to choose smaller table to keep it in main memory
+        unsigned long int lift_size = left->GetSchemaOut().GetTuplesNumber();
+        unsigned long int right_size = right->GetSchemaOut().GetTuplesNumber();
+
+        Record record;
+        if (lift_size < right_size) {
+            smallerSide = 0;
+            while (left->GetNext(record)) {
+                innerTable.Insert(record);
+//                record.print(cout, left->GetSchemaOut());
+//                cout << endl;
+            }
+        } else {
+            smallerSide = 1;
+            while (right->GetNext(record)) {
+                innerTable.Insert(record);
+            }
+        }
+        innerTable.MoveToStart();
+
+        if (smallerSide == 0) {
+            outerSide = right;
+        } else {
+            outerSide = left;
+        }
+        if (!outerSide->GetNext(currentOuterRecord)) {
+            return false;
+        }
+    }
+
+//    if (Join *b = dynamic_cast<Join*>(left)) {
+//        int a = 1;
+//    } else if (Select *b = dynamic_cast<Select*>(left)) {
+//        int a = 1;
+//    } else if (Scan *b = dynamic_cast<Scan*>(left)) {
+//        int a = 1;
+//    }
+
+    // retrieve new tuple matches or remaining matches of the same tuple
+    while (true) {
+        if (innerTable.AtEnd()) {
+            innerTable.MoveToStart();
+
+            if (!outerSide->GetNext(currentOuterRecord)) {
+                return false;
+            }
+        }
+
+        while (!innerTable.AtEnd()) {
+            Record& currentInnerRecord = innerTable.Current();
+            // return original record with joined output
+            if (smallerSide == 0 && predicate.Run(currentInnerRecord, currentOuterRecord)) {
+                _origin_record.MergeRecords(currentInnerRecord, currentOuterRecord,
+                    schemaLeft.GetNumAtts(), schemaRight.GetNumAtts(),
+                    attributes, schemaOut.GetNumAtts(), rightSideIndexStart);
+                innerTable.Advance();
+                return true;
+            } else if (predicate.Run(currentOuterRecord, currentInnerRecord)) {
+                _origin_record.MergeRecords(currentOuterRecord, currentInnerRecord,
+                    schemaLeft.GetNumAtts(), schemaRight.GetNumAtts(),
+                    attributes, schemaOut.GetNumAtts(), rightSideIndexStart);
+                innerTable.Advance();
+                return true;
+            }
+            innerTable.Advance();
+        }
+    }
+}
+
+bool Join::HJoin(Record& _origin_record) {
+    return false;
+}
+
+bool Join::SHJoin(Record& _origin_record) {
+    return false;
+}
 
 ostream& Join::print(ostream& _os) {
     _os << "JOIN (left-deep tree) estimated join size: " << schemaOut.GetTuplesNumber() << endl;
@@ -386,6 +500,7 @@ void Sum::Swap(Sum &_other) {
     OBJ_SWAP(schemaIn, _other.schemaIn);
     OBJ_SWAP(schemaOut, _other.schemaOut);
     OBJ_SWAP(compute, _other.compute);
+    SWAP(isComputed, _other.isComputed);
     SWAP(producer, _other.producer);
 }
 

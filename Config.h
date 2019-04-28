@@ -45,4 +45,7 @@ enum ArithOperator {PushInt, PushDouble, ToDouble, ToDouble2Down,
 // file types
 enum FileType {Heap, Sorted, Index};
 
+// join types
+enum JoinType {NLJ, HJ, SHJ};
+
 #endif //_CONFIG_H

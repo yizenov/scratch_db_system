@@ -151,9 +151,25 @@ private:
 	// selection predicate in conjunctive normal form
 	CNF predicate;
 
+	// defining a type of join algorithm
+	JoinType joinType;
+
 	// operators generating data
 	RelationalOp* left;
 	RelationalOp* right;
+
+    virtual bool NLJoin(Record& _origin_record);
+    virtual bool HJoin(Record& _origin_record);
+    virtual bool SHJoin(Record& _origin_record);
+
+    // nested-loop data
+    bool isInnerTableExists; // indicates if smaller table is loaded into main memory
+    TwoWayList<Record> innerTable;
+    int smallerSide; // indicates which side is inner, 0 is left and 1 is right side
+    Record currentOuterRecord;
+    RelationalOp* outerSide;
+	int *attributes;
+	int rightSideIndexStart;  // start index of right side schema
 
 public:
     Join() {}
@@ -161,7 +177,7 @@ public:
 		CNF& _predicate, RelationalOp* _left, RelationalOp* _right);
 	virtual ~Join();
 
-	virtual bool GetNext(Record& _record) {}
+	virtual bool GetNext(Record& _record);
 
 	void Swap(Join& _other);
 
