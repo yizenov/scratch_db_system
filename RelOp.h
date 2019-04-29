@@ -171,6 +171,14 @@ private:
 	int *attributes;
 	int rightSideIndexStart;  // start index of right side schema
 
+	// hash-join data
+    // value: 0 means record has not been used, -1 - record has already been used
+    InefficientMap<ComplexKeyify<Record>, SwapInt> innerHashedRecords;
+    TwoWayList<Record> usedRecords;
+    OrderMaker compareRecords; // for comparing two records
+    bool isNextTupleNeeded;
+    Schema compare_schema;
+
 public:
     Join() {}
 	Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,

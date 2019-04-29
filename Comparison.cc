@@ -274,9 +274,9 @@ int OrderMaker :: Run (Record& left, Record& right, OrderMaker& orderRight) {
 	char* left_bits = left.GetBits();
 	char* right_bits = right.GetBits();
 
-	for (int i = 0; i < numAtts; i++) {
+	for (int i = 0; i < numAtts; i+=2) {
 		val1 = left_bits + ((int *) left_bits)[whichAtts[i] + 1];
-		val2 = right_bits + ((int *) right_bits)[orderRight.whichAtts[i] + 1];
+		val2 = right_bits + ((int *) right_bits)[orderRight.whichAtts[i+1] + 1];
 
 		// these are used to store the two operands, depending on their type
 		int val1Int, val2Int;

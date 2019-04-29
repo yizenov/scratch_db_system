@@ -149,6 +149,30 @@ InefficientMap <Key, Data> :: IsThereRecord (Key &findMe, OrderMaker &comparator
     return 0;
 }
 
+template <class Key, class Data> int
+InefficientMap <Key, Data> :: IsThereJoinRecord (Key &findMe, OrderMaker &comparator) {
+
+	static Data garbage;
+	int numRight = container.RightLength();
+	while (container.RightLength() != 0) {
+		Record left = container.Current().key.GetData();
+		Record right = findMe.GetData();
+		if (comparator.Run(left, right, comparator) == 0)
+			return 1;
+		container.Advance();
+	}
+
+	container.MoveToStart();
+	while (container.RightLength() != numRight) {
+		Record left = container.Current().key.GetData();
+		Record right = findMe.GetData();
+		if (comparator.Run(left, right, comparator) == 0)
+			return 1;
+		container.Advance();
+	}
+	return 0;
+}
+
 template <class Key, class Data> void
 InefficientMap <Key, Data> :: Clear(void) {
 	MoveToStart();
@@ -221,6 +245,45 @@ InefficientMap <Key, Data> :: RemoveRecord (Key &findMe, Key &putKeyHere,
 		Record left = container.Current().key.GetData();
 		Record right = findMe.GetData();
 		if (comparator.Run(left, right) == 0) {
+			container.Remove (foo);
+			putKeyHere.Swap (foo.key);
+			putDataHere.Swap (foo.data);
+			return 1;
+		}
+		container.Advance ();
+	}
+
+	return 0;
+}
+
+template <class Key, class Data> int
+InefficientMap <Key, Data> :: RemoveJoinRecord (Key &findMe, Key &putKeyHere,
+		Data &putDataHere, OrderMaker &comparator) {
+
+	int numRight = container.RightLength ();
+	Node foo;
+
+	//TODO: change from zero to one: not sure the affect of this to the rest of the project
+	while (container.RightLength () != 0) { // 1
+		Record left = container.Current().key.GetData();
+		Record right = findMe.GetData();
+		if (comparator.Run(left, right, comparator) == 0) {
+			container.Remove (foo);
+			putKeyHere.Swap (foo.key);
+			putDataHere.Swap (foo.data);
+			return 1;
+		}
+		container.Advance ();
+	}
+
+	//numRight--; //TODO: key=2 cannot be find ??
+
+	container.MoveToStart ();
+	//int a = container.RightLength ();
+	while (container.RightLength () != numRight) {
+		Record left = container.Current().key.GetData();
+		Record right = findMe.GetData();
+		if (comparator.Run(left, right, comparator) == 0) {
 			container.Remove (foo);
 			putKeyHere.Swap (foo.key);
 			putDataHere.Swap (foo.data);

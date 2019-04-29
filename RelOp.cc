@@ -266,6 +266,10 @@ Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
     }
 
     // assuming two relations join only
+    if (predicate.numAnds > 1 || predicate.numAnds < 1) {
+        cout << "the system doesn't support multi-join" << endl;
+        exit(-1);
+    }
     Comparison comparison = predicate.andList[0];
 
     Target operand1 = comparison.operand1, operand2 = comparison.operand2;
@@ -276,18 +280,22 @@ Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
     if (operand1 == Left) {
         string left_attr_name = schemaLeft.GetAtts()[attr_idx1].name;
         no_distinct1 = schemaLeft.GetDistincts(left_attr_name);
+        compare_schema.GetAtts().push_back(schemaLeft.GetAtts()[attr_idx1]);
     } else if (operand1 == Right) {
         string right_attr_name = schemaRight.GetAtts()[attr_idx1].name;
         no_distinct1 = schemaRight.GetDistincts(right_attr_name);
+        compare_schema.GetAtts().push_back(schemaRight.GetAtts()[attr_idx1]);
     }
 
     int attr_idx2 = comparison.whichAtt2;
     if (operand2 == Left) {
         string left_attr_name = schemaLeft.GetAtts()[attr_idx2].name;
         no_distinct2 = schemaLeft.GetDistincts(left_attr_name);
+        compare_schema.GetAtts().push_back(schemaLeft.GetAtts()[attr_idx2]);
     } else {
         string right_attr_name = schemaRight.GetAtts()[attr_idx2].name;
         no_distinct2 = schemaRight.GetDistincts(right_attr_name);
+        compare_schema.GetAtts().push_back(schemaRight.GetAtts()[attr_idx2]);
     }
 
     if (no_distinct1 == 0 || no_distinct2 == 0) {
@@ -308,13 +316,22 @@ Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
 
     // TODO: check if there any case of having multiple joins
     // logic of join algorithm selection is needed here
-//    if (comparison.op == Equals) {
-//        joinType = NLJ; // temporarily
-//        // TODO: choose HJ or SHJ
-//    } else {
+    if (comparison.op == Equals) {
+        // choosing between HJ and SHJ
+        unsigned long int lift_size = left->GetSchemaOut().GetTuplesNumber();
+        unsigned long int right_size = right->GetSchemaOut().GetTuplesNumber();
+
+        if (lift_size > 10000000 && right_size > 10000000) { //1000 or 10000
+            //joinType = SHJ;
+            joinType = NLJ; // temporarily
+        } else {
+            joinType = HJ;
+        }
+
+    } else {
         joinType = NLJ; // by default
-        isInnerTableExists = false;
-    //}
+    }
+    isInnerTableExists = false;
 }
 
 Join::~Join() {}
@@ -342,8 +359,6 @@ bool Join::NLJoin(Record& _origin_record) {
             smallerSide = 0;
             while (left->GetNext(record)) {
                 innerTable.Insert(record);
-//                record.print(cout, left->GetSchemaOut());
-//                cout << endl;
             }
         } else {
             smallerSide = 1;
@@ -362,14 +377,6 @@ bool Join::NLJoin(Record& _origin_record) {
             return false;
         }
     }
-
-//    if (Join *b = dynamic_cast<Join*>(left)) {
-//        int a = 1;
-//    } else if (Select *b = dynamic_cast<Select*>(left)) {
-//        int a = 1;
-//    } else if (Scan *b = dynamic_cast<Scan*>(left)) {
-//        int a = 1;
-//    }
 
     // retrieve new tuple matches or remaining matches of the same tuple
     while (true) {
@@ -403,7 +410,92 @@ bool Join::NLJoin(Record& _origin_record) {
 }
 
 bool Join::HJoin(Record& _origin_record) {
-    return false;
+    // TODO: duplicate records
+    if (!isInnerTableExists) {
+        isInnerTableExists = true;
+
+        OrderMaker orderMaker(compare_schema);
+        compareRecords.Swap(orderMaker);
+
+        // need to choose smaller table to keep it in main memory
+        unsigned long int lift_size = left->GetSchemaOut().GetTuplesNumber();
+        unsigned long int right_size = right->GetSchemaOut().GetTuplesNumber();
+
+        Record record;
+        if (lift_size < right_size) {
+            smallerSide = 0;
+            while (left->GetNext(record)) {
+                SwapInt val(0);
+                ComplexKeyify<Record> recordToFind(record);
+                innerHashedRecords.Insert(recordToFind, val);
+            }
+        } else {
+            smallerSide = 1;
+            while (right->GetNext(record)) {
+                SwapInt val(0);
+                ComplexKeyify<Record> recordToFind(record);
+                innerHashedRecords.Insert(recordToFind, val);
+            }
+        }
+        innerHashedRecords.MoveToStart();
+
+        if (smallerSide == 0) {
+            outerSide = right;
+        } else {
+            outerSide = left;
+        }
+
+        isNextTupleNeeded = false;
+    }
+
+    // retrieve new tuple matches or remaining matches of the same tuple
+    while (true) {
+
+        if (!isNextTupleNeeded && !outerSide->GetNext(currentOuterRecord)) {
+            return false;
+        }
+
+        isNextTupleNeeded = true;
+
+        ComplexKeyify<Record> recordToFind(currentOuterRecord);
+        while (innerHashedRecords.IsThereJoinRecord(recordToFind, compareRecords) == 1) {
+            SwapInt value;
+            ComplexKeyify<Record> removedKey;
+
+            if (innerHashedRecords.RemoveJoinRecord(recordToFind, removedKey, value, compareRecords) == 0) {
+                cout << "Record wasn't found after RecordJoinFind operator" << endl;
+                continue;
+            }
+
+            Record currentInnerRecord = removedKey.GetData();
+
+            // return original record with joined output
+            if (smallerSide == 0) {
+                _origin_record.MergeRecords(currentInnerRecord, currentOuterRecord,
+                    schemaLeft.GetNumAtts(), schemaRight.GetNumAtts(),
+                    attributes, schemaOut.GetNumAtts(), rightSideIndexStart);
+            } else {
+                _origin_record.MergeRecords(currentOuterRecord, currentInnerRecord,
+                    schemaLeft.GetNumAtts(), schemaRight.GetNumAtts(),
+                    attributes, schemaOut.GetNumAtts(), rightSideIndexStart);
+            }
+            usedRecords.Insert(currentInnerRecord);
+            return true;
+        }
+        isNextTupleNeeded = false;
+
+        if (usedRecords.Length() > 0) {
+            // re-inserting used records
+            usedRecords.MoveToStart();
+            while (!usedRecords.AtEnd()) {
+                SwapInt val(0);
+                Record tempRecord;
+                usedRecords.Remove(tempRecord);
+                ComplexKeyify<Record> tempComplextRecord(tempRecord);
+                innerHashedRecords.Insert(tempComplextRecord, val);
+            }
+        }
+    }
 }
 
 bool Join::SHJoin(Record& _origin_record) {

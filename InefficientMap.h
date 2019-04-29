@@ -39,11 +39,13 @@ public:
 	// returns a 1 on success and a zero if the given key was not found
 	int Remove (Key &findMe, Key &putKeyHere, Data &putDataHere);
 	int RemoveRecord (Key &findMe, Key &putKeyHere, Data &putDataHere, OrderMaker &comparator);
+	int RemoveJoinRecord (Key &findMe, Key &putKeyHere, Data &putDataHere, OrderMaker &comparator);
 
 	// attempts to locate the given key
 	// returns 1 if it is, 0 otherwise
 	int IsThere (Key &findMe);
     int IsThereRecord (Key &findMe, OrderMaker &comparator);
+	int IsThereJoinRecord (Key &findMe, OrderMaker &comparator);
 
 	// returns a reference to the data associated with the given search key
 	// if the key is not there, then a garbage (newly initialized) Data item is
