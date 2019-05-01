@@ -180,6 +180,16 @@ private:
     Schema compare_schema;
     int *join_attributes;
 
+    // symmetric non-blocking hash-join data
+    InefficientMap<ComplexKeyify<Record>, SwapInt> innerHash_left, innerHash_right;
+    TwoWayList<Record> usedRecords_left, usedRecords_right;
+    OrderMaker compareRecords_left, compareRecords_right;
+    OrderMaker *compareRecordsCommon;
+    InefficientMap<ComplexKeyify<Record>, SwapInt> *innerHashCommon;
+    TwoWayList<Record> *usedRecordCommon;
+    bool sideTurn; // false - left side, true - right side
+    int sideCounter;
+
 public:
     Join() {}
 	Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
