@@ -271,6 +271,7 @@ Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
         exit(-1);
     }
     Comparison comparison = predicate.andList[0];
+    join_attributes = new int[predicate.numAnds * 2];
 
     Target operand1 = comparison.operand1, operand2 = comparison.operand2;
     int no_distinct1 = 0, no_distinct2 = 0;
@@ -280,22 +281,31 @@ Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
     if (operand1 == Left) {
         string left_attr_name = schemaLeft.GetAtts()[attr_idx1].name;
         no_distinct1 = schemaLeft.GetDistincts(left_attr_name);
-        compare_schema.GetAtts().push_back(schemaLeft.GetAtts()[attr_idx1]);
+        if (compare_schema.GetNumAtts() == 0)
+            compare_schema.GetAtts().insert(compare_schema.GetAtts().begin(), schemaLeft.GetAtts()[attr_idx1]);
+        else
+            compare_schema.GetAtts()[0] = schemaLeft.GetAtts()[attr_idx1];
+        join_attributes[0] = attr_idx1;
     } else if (operand1 == Right) {
         string right_attr_name = schemaRight.GetAtts()[attr_idx1].name;
         no_distinct1 = schemaRight.GetDistincts(right_attr_name);
-        compare_schema.GetAtts().push_back(schemaRight.GetAtts()[attr_idx1]);
+        if (compare_schema.GetNumAtts() == 0)
+            compare_schema.GetAtts().insert(compare_schema.GetAtts().begin(), schemaRight.GetAtts()[attr_idx1]);
+        compare_schema.GetAtts().insert(compare_schema.GetAtts().begin() + 1, schemaRight.GetAtts()[attr_idx1]);
+        join_attributes[1] = attr_idx1;
     }
 
     int attr_idx2 = comparison.whichAtt2;
     if (operand2 == Left) {
         string left_attr_name = schemaLeft.GetAtts()[attr_idx2].name;
         no_distinct2 = schemaLeft.GetDistincts(left_attr_name);
-        compare_schema.GetAtts().push_back(schemaLeft.GetAtts()[attr_idx2]);
+        compare_schema.GetAtts()[0] = schemaLeft.GetAtts()[attr_idx2];
+        join_attributes[0] = attr_idx2;
     } else {
         string right_attr_name = schemaRight.GetAtts()[attr_idx2].name;
         no_distinct2 = schemaRight.GetDistincts(right_attr_name);
-        compare_schema.GetAtts().push_back(schemaRight.GetAtts()[attr_idx2]);
+        compare_schema.GetAtts()[1] = schemaRight.GetAtts()[attr_idx2];
+        join_attributes[1] = attr_idx2;
     }
 
     if (no_distinct1 == 0 || no_distinct2 == 0) {
@@ -324,12 +334,15 @@ Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
         if (lift_size > 10000000 && right_size > 10000000) { //1000 or 10000
             //joinType = SHJ;
             joinType = NLJ; // temporarily
+            cout << "SH Join" << endl;
         } else {
             joinType = HJ;
+            cout << "H Join" << endl;
         }
 
     } else {
         joinType = NLJ; // by default
+        cout << "NL Join" << endl;
     }
     isInnerTableExists = false;
 }
@@ -414,9 +427,6 @@ bool Join::HJoin(Record& _origin_record) {
     if (!isInnerTableExists) {
         isInnerTableExists = true;
 
-        OrderMaker orderMaker(compare_schema);
-        compareRecords.Swap(orderMaker);
-
         // need to choose smaller table to keep it in main memory
         unsigned long int lift_size = left->GetSchemaOut().GetTuplesNumber();
         unsigned long int right_size = right->GetSchemaOut().GetTuplesNumber();
@@ -436,8 +446,14 @@ bool Join::HJoin(Record& _origin_record) {
                 ComplexKeyify<Record> recordToFind(record);
                 innerHashedRecords.Insert(recordToFind, val);
             }
+
+            SWAP(join_attributes[0], join_attributes[1]);
+            OBJ_SWAP(compare_schema.GetAtts()[0], compare_schema.GetAtts()[1]);
         }
         innerHashedRecords.MoveToStart();
+
+        OrderMaker orderMaker(compare_schema, join_attributes);
+        compareRecords.Swap(orderMaker);
 
         if (smallerSide == 0) {
             outerSide = right;

@@ -184,6 +184,38 @@ OrderMaker :: OrderMaker(Schema& schema) : numAtts(0) {
 	}
 }
 
+OrderMaker :: OrderMaker(Schema& schema, int* _atts) : numAtts(0) {
+	unsigned int n = schema.GetNumAtts();
+	vector<Attribute> atts = schema.GetAtts();
+
+	//first add the Integer attributes
+	for (int i = 0; i < n; i++) {
+		if (atts[i].type == Integer) {
+			whichAtts[numAtts] = _atts[i];
+			whichTypes[numAtts] = Integer;
+			numAtts++;
+		}
+	}
+
+	// now add in the doubles
+	for (int i = 0; i < n; i++) {
+		if (atts[i].type == Float) {
+			whichAtts[numAtts] = _atts[i];
+			whichTypes[numAtts] = Float;
+			numAtts++;
+		}
+	}
+
+	// and finally the strings
+	for (int i = 0; i < n; i++) {
+		if (atts[i].type == String) {
+			whichAtts[numAtts] = _atts[i];
+			whichTypes[numAtts] = String;
+			numAtts++;
+		}
+	}
+}
+
 OrderMaker :: OrderMaker(Schema& schema, int* _atts, int _atts_no) {
 	numAtts = _atts_no;
 	vector<Attribute> atts = schema.GetAtts();

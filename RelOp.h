@@ -178,6 +178,7 @@ private:
     OrderMaker compareRecords; // for comparing two records
     bool isNextTupleNeeded;
     Schema compare_schema;
+    int *join_attributes;
 
 public:
     Join() {}

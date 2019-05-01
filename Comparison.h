@@ -78,6 +78,7 @@ public:
 	//Integer attributes are first, followed by Double attributes, and, finally,
 	//String attributes
 	OrderMaker(Schema& schema);
+	OrderMaker(Schema& schema, int* _atts);
 
 	//the sorting order is explicitly specified
 	//atts contains the indices of the attributes appearing in the sort order
