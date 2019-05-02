@@ -332,6 +332,7 @@ Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
         unsigned long int right_size = right->GetSchemaOut().GetTuplesNumber();
 
         if (lift_size > 0 && right_size > 0) { //1000 or 10000
+        //if (lift_size > 10000000000 && right_size > 10000000000) {
             joinType = SHJ;
             sideCounter = 0;
             sideTurn = false;
@@ -531,7 +532,9 @@ bool Join::SHJoin(Record& _origin_record) {
 
         compareRecordsCommon = &compareRecords_left;
         innerHashCommon = &innerHash_left;
+        innerHashOther = &innerHash_right;
         usedRecordCommon = &usedRecords_left;
+        isOtherFinished = false;
     }
 
     // Algorithm:
@@ -543,29 +546,53 @@ bool Join::SHJoin(Record& _origin_record) {
     // retrieve new tuple matches or remaining matches of the same tuple
     while (true) {
 
-        if (sideCounter == 10) {
+        if (sideCounter == 10 && !isOtherFinished) {
             if (!sideTurn) {
                 sideTurn = true;
                 outerSide = left;
                 compareRecordsCommon = &compareRecords_right;
                 innerHashCommon = &innerHash_right;
+                innerHashOther = &innerHash_left;
                 usedRecordCommon = &usedRecords_right;
             } else {
                 sideTurn = false;
                 outerSide = right;
                 compareRecordsCommon = &compareRecords_left;
                 innerHashCommon = &innerHash_left;
+                innerHashOther = &innerHash_right;
                 usedRecordCommon = &usedRecords_left;
             }
             sideCounter = 0;
         }
 
         if (!isNextTupleNeeded && !outerSide->GetNext(currentOuterRecord)) {
-            //TODO: process the rest of the other side
-            return false;
+            // process the rest of the other side
+            if (!isOtherFinished) {
+
+                if (!sideTurn) {
+                    sideTurn = true;
+                    outerSide = left;
+                    compareRecordsCommon = &compareRecords_right;
+                    innerHashCommon = &innerHash_right;
+                    innerHashOther = &innerHash_left;
+                    usedRecordCommon = &usedRecords_right;
+                } else {
+                    sideTurn = false;
+                    outerSide = right;
+                    compareRecordsCommon = &compareRecords_left;
+                    innerHashCommon = &innerHash_left;
+                    innerHashOther = &innerHash_right;
+                    usedRecordCommon = &usedRecords_left;
+                }
+                sideCounter = 0;
+
+                isOtherFinished = true;
+                continue;
+            } else {
+                return false;
+            }
         }
 
-        sideCounter++;
         isNextTupleNeeded = true;
 
         ComplexKeyify<Record> recordToFind(currentOuterRecord);
@@ -594,10 +621,11 @@ bool Join::SHJoin(Record& _origin_record) {
             return true;
         }
         isNextTupleNeeded = false;
+        sideCounter++;
 
         SwapInt val(0);
         ComplexKeyify<Record> recordToFindTemp(currentOuterRecord);
-        innerHashCommon->Insert(recordToFindTemp, val);
+        innerHashOther->Insert(recordToFindTemp, val);
 
         if (usedRecordCommon->Length() > 0) {
             // re-inserting used records

@@ -185,10 +185,11 @@ private:
     TwoWayList<Record> usedRecords_left, usedRecords_right;
     OrderMaker compareRecords_left, compareRecords_right;
     OrderMaker *compareRecordsCommon;
-    InefficientMap<ComplexKeyify<Record>, SwapInt> *innerHashCommon;
+    InefficientMap<ComplexKeyify<Record>, SwapInt> *innerHashCommon, *innerHashOther;
     TwoWayList<Record> *usedRecordCommon;
     bool sideTurn; // false - left side, true - right side
     int sideCounter;
+    bool isOtherFinished;
 
 public:
     Join() {}
