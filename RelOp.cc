@@ -304,7 +304,10 @@ Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
     } else {
         string right_attr_name = schemaRight.GetAtts()[attr_idx2].name;
         no_distinct2 = schemaRight.GetDistincts(right_attr_name);
-        compare_schema.GetAtts()[1] = schemaRight.GetAtts()[attr_idx2];
+        if (compare_schema.GetNumAtts() == 1)
+            compare_schema.GetAtts().insert(compare_schema.GetAtts().begin() + 1, schemaRight.GetAtts()[attr_idx2]);
+        else
+            compare_schema.GetAtts()[1] = schemaRight.GetAtts()[attr_idx2];
         join_attributes[1] = attr_idx2;
     }
 
@@ -331,8 +334,8 @@ Join::Join(Schema& _schemaLeft, Schema& _schemaRight, Schema& _schemaOut,
         unsigned long int lift_size = left->GetSchemaOut().GetTuplesNumber();
         unsigned long int right_size = right->GetSchemaOut().GetTuplesNumber();
 
-        if (lift_size > 0 && right_size > 0) { //1000 or 10000
-        //if (lift_size > 10000000000 && right_size > 10000000000) {
+        //if (lift_size > 0 && right_size > 0) { //1000 or 10000
+        if (lift_size > 10000000000 && right_size > 10000000000) {
             joinType = SHJ;
             sideCounter = 0;
             sideTurn = false;
