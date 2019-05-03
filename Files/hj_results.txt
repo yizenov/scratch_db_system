@@ -1,0 +1,71 @@
+------------------JH
+1. 0m9.087s
+2. 0m19.086s
+3. 1m10.499s
+4. 0m0.783s
+5.
+6. 0m2.168s
+7. 1m56.508s
+8. 2m2.752s
+9. 3m52.251s
+10. the parser fails
+11. 0m0.388s
+12. zero selectivity
+13. zero selectivity
+14. 0m0.259s
+15. zero selectivity
+16. 0m0.218s
+17. zero selectivity
+18. zero selectivity
+19. zero selectivity
+20. 0m0.195s
+
+15
+60175
+105
+
+93/100 -5 for 10.sql, -2 for 16.sql change query 24vs25 tuples
+16/25 no diff, -5 manual change, 8min,
+
+--------------SHJ
+1.
+2.
+3.
+4.
+5.
+6.
+7.
+8.
+9.
+10. the parser fails
+11.
+12. zero selectivity
+13. zero selectivity
+14.
+15. zero selectivity
+16.
+17. zero selectivity
+18. zero selectivity
+19. zero selectivity
+20.
+--------------NLJ
+1.
+2.
+3.
+4.
+5.
+6.
+7.
+8.
+9.
+10. the parser fails
+11.
+12. zero selectivity
+13. zero selectivity
+14.
+15. zero selectivity
+16.
+17. zero selectivity
+18. zero selectivity
+19. zero selectivity
+20.
