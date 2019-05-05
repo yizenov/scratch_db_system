@@ -18,6 +18,12 @@ extern struct NameList *groupingAtts;      // grouping attributes
 extern struct NameList *attsToSelect;      // the attributes in SELECT
 extern int distinctAtts; // 1 if there is a DISTINCT in a non-aggregate query
 
+extern char* table; // creating a table for CREATE and LOAD
+extern struct AttsAndTypes *attsAndTypesList; // list of attributes and types
+extern char* textFile; // text file path to load into a heap file
+extern char* indexName; // index name
+extern char* att; // attribute name that index is build on
+
 extern "C" int yyparse();
 extern "C" int yylex_destroy();
 
@@ -54,17 +60,36 @@ int main(int argc, char *argv[]) {
 
         if (parse != 0) return -1;
 
-        // at this point we have the parse tree in the ParseTree data structures
-        // we are ready to invoke the query compiler with the given query
-        // the result is the execution tree built from the parse tree and optimized
-        QueryExecutionTree queryTree;
-        compiler.Compile(tables, attsToSelect, finalFunction, predicate, groupingAtts,
-                         distinctAtts, queryTree);
+        if (table != NULL && attsAndTypesList != NULL) {
+            cout << "CREATE TABLE QUERY" << endl;
+            cout << table << endl;
+            cout << attsAndTypesList->name << endl;
+            cout << attsAndTypesList->type << endl;
+            catalog.CreateTable(table, attsAndTypesList);
+        } else if (table != NULL && textFile != NULL) {
+            cout << "LOAD DATA QUERY" << endl;
+            cout << table << endl;
+            cout << textFile << endl;
+            catalog.LoadData(table, textFile);
+        } else if(indexName != NULL && table != NULL && att != NULL) {
+            cout << "CREATE INDEX QUERY" << endl;
+            cout << indexName << endl;
+            cout << table << endl;
+            cout << att << endl;
+            catalog.CreateIndex(indexName, table, att);
+        } else {
+            // at this point we have the parse tree in the ParseTree data structures
+            // we are ready to invoke the query compiler with the given query
+            // the result is the execution tree built from the parse tree and optimized
+            QueryExecutionTree queryTree;
+            compiler.Compile(tables, attsToSelect, finalFunction, predicate, groupingAtts,
+                             distinctAtts, queryTree);
 
-        //TODO: printing the tree by levels
-        cout << queryTree << endl << endl;
+            //TODO: printing the tree by levels
+            cout << queryTree << endl << endl;
 
-        queryTree.ExecuteQuery();
+            queryTree.ExecuteQuery();
+        }
 
         string option;
         cout << "Type 'exit' to finish, otherwise enter any other input: ";

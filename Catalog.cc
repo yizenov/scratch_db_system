@@ -517,3 +517,15 @@ string Catalog::GetTypeName(Type _attr_type) {
   else
     return "UNKNOWN TYPE";
 }
+
+void Catalog::CreateTable(char* _table, AttsAndTypes* _attrAndTypes) {
+
+}
+
+void Catalog::LoadData(char* _table, char* _textFile) {
+
+}
+
+void Catalog::CreateIndex(char* _index, char* _table, char* _attr) {
+
+}

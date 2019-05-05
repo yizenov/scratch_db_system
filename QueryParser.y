@@ -15,7 +15,12 @@
 	struct AndList* predicate; // the predicate in WHERE
 	struct NameList* groupingAtts; // grouping attributes
 	struct NameList* attsToSelect; // the attributes in SELECT
-	int distinctAtts; // 1 if there is a DISTINCT in a non-aggregate query 
+	int distinctAtts; // 1 if there is a DISTINCT in a non-aggregate query
+	char* table; // creating a table for CREATE and LOAD
+	struct AttsAndTypes* attsAndTypesList; // list of attributes and types
+	char* textFile; // text file path to load into a heap file
+	char* indexName; // index name
+	char* att; // attribute name that index is build on
 %}
 
 
@@ -28,6 +33,7 @@
 	struct Operand* myBoolOperand;
 	struct AndList* myAndList;
 	struct NameList* myNames;
+	struct AttsAndTypes* myAttsAndTypes;
 	char* actualChars;
 	char whichOne;
 }
@@ -45,6 +51,12 @@
 %token WHERE
 %token SUM
 %token AND
+%token CREATE
+%token TABLE
+%token LOAD
+%token DATA
+%token INDEX
+%token ON
 
 %type <myAndList> AndList
 %type <myOperand> SimpleExp
@@ -55,6 +67,7 @@
 %type <myTables> Tables
 %type <myBoolOperand> Literal
 %type <myNames> Atts
+%type <myAttsAndTypes> AttsAndTypes
 
 %start SQL
 
@@ -79,6 +92,25 @@ SQL: SELECT SelectAtts FROM Tables WHERE AndList
 	tables = $4;
 	predicate = $6;	
 	groupingAtts = $9;
+}
+
+| CREATE TABLE YY_NAME '(' AttsAndTypes ')'
+{
+	table = $3;
+	attsAndTypesList = $5;
+}
+
+| LOAD DATA YY_NAME FROM YY_STRING
+{
+	table = $3;
+	textFile = $5;
+}
+
+| CREATE INDEX YY_NAME TABLE YY_NAME ON YY_NAME
+{
+	indexName = $3;
+	table = $5;
+	att = $7;
 };
 
 
@@ -129,6 +161,21 @@ Atts: YY_NAME
 	$$->next = $1;
 };
 
+AttsAndTypes: YY_NAME YY_NAME
+{
+	$$ = (struct AttsAndTypes*) malloc (sizeof (struct AttsAndTypes));
+	$$->name = $1;
+	$$->type = $2;
+	$$->next = NULL;
+}
+
+| AttsAndTypes ',' YY_NAME YY_NAME
+{
+	$$ = (struct AttsAndTypes*) malloc (sizeof (struct AttsAndTypes));
+	$$->name = $3;
+	$$->type = $4;
+	$$->next = $1;
+};
 
 Tables: YY_NAME 
 {

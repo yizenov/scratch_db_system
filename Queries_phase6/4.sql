@@ -1,0 +1,1 @@
+CREATE TABLE new_table (new_col1 INTEGER, new_col2 FLOAT)

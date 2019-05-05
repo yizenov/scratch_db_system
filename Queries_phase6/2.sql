@@ -1,0 +1,1 @@
+CREATE INDEX new_index TABLE new_table ON col_name

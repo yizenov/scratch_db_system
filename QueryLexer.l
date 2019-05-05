@@ -51,6 +51,18 @@ void yyerror(char* s);
 
 "BY"			return(BY);
 
+"CREATE"		return(CREATE);
+
+"TABLE"			return(TABLE);
+
+"LOAD"			return(LOAD);
+
+"DATA"			return(DATA);
+
+"INDEX"		    return(INDEX);
+
+"ON"			return(ON);
+
 "("				return('(');
 
 "<"				return('<');

@@ -17,7 +17,7 @@ main.out: QueryParser.o QueryLexer.o Swapify.o ComplexSwapify.o Keyify.o Schema.
 QueryParser.o: QueryParser.y
 	yacc --defines=QueryParser.h -o QueryParser.c QueryParser.y
 	sed $(tag) QueryParser.c -e "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/"
-	g++ -c QueryParser.c
+	g++ -c -Wno-write-strings QueryParser.c
 
 QueryLexer.o: QueryLexer.l
 	lex -o QueryLexer.c QueryLexer.l
