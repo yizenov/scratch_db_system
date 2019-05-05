@@ -62,21 +62,13 @@ int main(int argc, char *argv[]) {
 
         if (table != NULL && attsAndTypesList != NULL) {
             cout << "CREATE TABLE QUERY" << endl;
-            cout << table << endl;
-            cout << attsAndTypesList->name << endl;
-            cout << attsAndTypesList->type << endl;
-            catalog.CreateTable(table, attsAndTypesList);
+            catalog.CreateTableSQL(table, attsAndTypesList);
         } else if (table != NULL && textFile != NULL) {
             cout << "LOAD DATA QUERY" << endl;
-            cout << table << endl;
-            cout << textFile << endl;
-            catalog.LoadData(table, textFile);
+            catalog.LoadDataSQL(table, textFile);
         } else if(indexName != NULL && table != NULL && att != NULL) {
             cout << "CREATE INDEX QUERY" << endl;
-            cout << indexName << endl;
-            cout << table << endl;
-            cout << att << endl;
-            catalog.CreateIndex(indexName, table, att);
+            catalog.CreateIndexSQL(indexName, table, att);
         } else {
             // at this point we have the parse tree in the ParseTree data structures
             // we are ready to invoke the query compiler with the given query

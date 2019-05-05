@@ -518,14 +518,47 @@ string Catalog::GetTypeName(Type _attr_type) {
     return "UNKNOWN TYPE";
 }
 
-void Catalog::CreateTable(char* _table, AttsAndTypes* _attrAndTypes) {
+void Catalog::CreateTableSQL(char* _table, AttsAndTypes* _attrAndTypes) {
+  string table_name = _table;
+  vector<string> attributes;
+  vector<string> attribute_types;
 
+  AttsAndTypes *current = _attrAndTypes;
+  while (current != NULL) {
+      string type_name = current->type;
+      if (type_name != "Integer" && type_name != "Float" && type_name != "String") {
+          cout << "Unsupported type in creating a table" << endl;
+          exit(-1);
+      }
+      string col_name = _attrAndTypes->name;
+      attributes.push_back(col_name);
+      attribute_types.push_back(type_name);
+      current = _attrAndTypes->next;
+  }
+
+  bool status = CreateTable(table_name, attributes, attribute_types);
+  if (status) {
+      KeyString table_data(table_name);
+      if (schema_data_->IsThere(table_data) == 0) {
+          cout << "schema wasn't found for the new table" << endl;
+          exit(-1);
+      }
+      Schema& table_schema = schema_data_->Find(table_data);
+      string path = "HeapFileData/" + table_name + ".hfile";
+      table_schema.SetTablePath(path);
+      cout << "TABLE IS SAVED IN DB" << endl;
+
+      this->Save(); // saving into the db
+  } else {
+      cout << "TABLE IS FAILED TO BE SAVED" << endl;
+      exit(-1);
+  }
 }
 
-void Catalog::LoadData(char* _table, char* _textFile) {
-
+void Catalog::LoadDataSQL(char* _table, char* _textFile) {
+  cout << "123-" << schema_data_->Length() << endl;
 }
 
-void Catalog::CreateIndex(char* _index, char* _table, char* _attr) {
-
+void Catalog::CreateIndexSQL(char* _index, char* _table, char* _attr) {
+  cout << "123" << endl;
 }

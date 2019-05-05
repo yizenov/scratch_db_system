@@ -1,1 +1,1 @@
-CREATE TABLE new_table (new_col INTEGER)
+CREATE TABLE new_table (new_col Integer)

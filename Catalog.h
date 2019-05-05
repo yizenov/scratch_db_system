@@ -134,9 +134,9 @@ public:
 	 */
 	string GetTypeName(Type _attr_type);
 
-	void CreateTable(char* _table, AttsAndTypes* _attrAndTypes);
-	void CreateIndex(char* _index, char* _table, char* _attr);
-	void LoadData(char* _table, char* _textFile);
+	void CreateTableSQL(char* _table, AttsAndTypes* _attrAndTypes);
+	void CreateIndexSQL(char* _index, char* _table, char* _attr);
+	void LoadDataSQL(char* _table, char* _textFile);
 };
 
 #endif //_CATALOG_H
