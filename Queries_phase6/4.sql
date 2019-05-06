@@ -1,1 +1,1 @@
-CREATE TABLE new_table (new_col1 Integer, new_col2 Float)
+CREATE TABLE table_new (t_index Integer, t_col_val Float)

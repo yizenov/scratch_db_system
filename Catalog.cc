@@ -3,6 +3,7 @@
 #include "InefficientMap.cc"  //TODO:undefined reference (forced because of using 'template' in there)
 #include "Keyify.cc" //TODO:undefined reference (forced because of using 'template' in there)
 #include "ComplexSwapify.cc" //TODO:undefined reference (forced because of using 'template' in there)
+#include "DBFile.h"
 
 #include <bits/stdc++.h>
 
@@ -530,12 +531,15 @@ void Catalog::CreateTableSQL(char* _table, AttsAndTypes* _attrAndTypes) {
           cout << "Unsupported type in creating a table" << endl;
           exit(-1);
       }
-      string col_name = _attrAndTypes->name;
+      string col_name = current->name;
       attributes.push_back(col_name);
       attribute_types.push_back(type_name);
-      current = _attrAndTypes->next;
+      current = current->next;
   }
+  reverse(attribute_types.begin(), attribute_types.end());
+  reverse(attributes.begin(), attributes.end());
 
+  //TODO: projects in reverse order
   bool status = CreateTable(table_name, attributes, attribute_types);
   if (status) {
       KeyString table_data(table_name);
@@ -556,9 +560,47 @@ void Catalog::CreateTableSQL(char* _table, AttsAndTypes* _attrAndTypes) {
 }
 
 void Catalog::LoadDataSQL(char* _table, char* _textFile) {
-  cout << "123-" << schema_data_->Length() << endl;
+  // delimiter '|'
+
+  string txt_files_location = "tpch_0_01_sf/";
+  string txt_file_name = txt_files_location + _textFile + ".tbl";
+
+  string table_name = _table;
+  KeyString table_data(table_name);
+  if (schema_data_->IsThere(table_data) == 0) {
+      cout << "schema wasn't found for the new table" << endl;
+      exit(-1);
+  }
+  Schema& table_schema = schema_data_->Find(table_data);
+  string heap_file_name = table_schema.GetTablePath();
+
+  DBFile heap_file;
+  unsigned long heap_file_name_len = heap_file_name.length() + 1;
+  char heap_file_path[heap_file_name_len];
+  strcpy(heap_file_path, heap_file_name.c_str());
+
+  if (heap_file.Create(heap_file_path, Heap) == 0) {
+
+    unsigned long txt_file_name_len = txt_file_name.length() + 1;
+    char txt_file_path[txt_file_name_len];
+    strcpy(txt_file_path, txt_file_name.c_str());
+
+    heap_file.Load(table_schema, txt_file_path);
+
+    // update catalog
+    // TODO: update number of tuples, distinct value per column in catalog
+    int no_pages = heap_file.Close();
+    cout << "TEXT DATA IS LOADED INTO THE TABLE" << endl;
+
+  } else {
+    cout << "file loading failed: " << table_name << endl;
+    exit(-1);
+  }
+
 }
 
 void Catalog::CreateIndexSQL(char* _index, char* _table, char* _attr) {
+  // need to store in catalog if there is index on  given table column
+  // decision to use index during optimization
   cout << "123" << endl;
 }

@@ -1,0 +1,1 @@
+SELECT t_col_val, t_index FROM table_new WHERE t_index > 0
